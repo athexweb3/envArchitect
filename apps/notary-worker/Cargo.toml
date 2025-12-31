@@ -1,0 +1,17 @@
+[package]
+name = "notary-worker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Workspace
+database = { path = "../../packages/database" }
+
+# System
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dotenv = { workspace = true }
+serde_json = { workspace = true }
+# sigstore = "0.8" # Will rely on workspace later
