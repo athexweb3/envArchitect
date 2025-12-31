@@ -1,5 +1,5 @@
-pub mod ports;
 pub mod entities;
+pub mod ports;
 
-pub use ports::package_manager::PackageManager;
 pub use entities::tool::Tool;
+pub use ports::package_manager::PackageManager;

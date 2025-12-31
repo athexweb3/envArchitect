@@ -1,7 +1,7 @@
+use anyhow::Result;
 use domain::entities::tool::Tool;
 use domain::ports::package_manager::{PackageError, PackageManager};
 use std::process::Command;
-use anyhow::Result;
 
 pub struct BrewAdapter;
 
@@ -14,7 +14,7 @@ impl BrewAdapter {
 impl PackageManager for BrewAdapter {
     fn install(&self, tool: &Tool) -> Result<(), PackageError> {
         let package = tool.package_name.as_deref().unwrap_or(&tool.name);
-        
+
         println!("🍺 Brew installing: {}", package);
 
         let status = Command::new("brew")

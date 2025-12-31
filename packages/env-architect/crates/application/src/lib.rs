@@ -1,7 +1,7 @@
 pub mod install_usecase;
+use anyhow::Result;
 use domain::entities::tool::Tool;
 use domain::ports::package_manager::PackageManager;
-use anyhow::Result;
 
 pub async fn install_tool(tool: Tool, pm: &impl PackageManager) -> Result<()> {
     // 1. Check if installed
@@ -13,7 +13,7 @@ pub async fn install_tool(tool: Tool, pm: &impl PackageManager) -> Result<()> {
     // 2. Install
     println!("📦 Installing {}...", tool.name);
     pm.install(&tool)?;
-    
+
     println!("✨ Successfully installed {}.", tool.name);
     Ok(())
 }
