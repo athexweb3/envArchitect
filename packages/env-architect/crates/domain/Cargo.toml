@@ -1,0 +1,9 @@
+[package]
+name = "domain"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+petgraph = "0.8.3"
+serde = { workspace = true }
+thiserror = { workspace = true }

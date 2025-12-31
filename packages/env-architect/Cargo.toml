@@ -1,0 +1,9 @@
+[package]
+name = "env-architect"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "crates/domain" }
+infrastructure = { path = "crates/infrastructure" }
+application = { path = "crates/application" }

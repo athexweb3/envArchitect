@@ -1,0 +1,21 @@
+[package]
+name = "env-architect-cli"
+version = "0.1.0"
+edition = "2021"
+default-run = "env-architect"
+
+[[bin]]
+name = "env-architect"
+path = "src/main.rs"
+
+[dependencies]
+# The FACADE dependency
+env-architect = { path = "../../packages/env-architect" }
+
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+crossterm = { workspace = true }
+dialoguer = { workspace = true }
+indicatif = { workspace = true }
+comfy-table = { workspace = true }

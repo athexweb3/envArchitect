@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/cli",
+    "packages/env-architect",
+    "packages/env-architect/crates/*",
+]
+
+[workspace.dependencies]
+env-architect = { path = "packages/env-architect" }
+# Internal crate links for the facade to work
+domain = { path = "packages/env-architect/crates/domain" }
+infrastructure = { path = "packages/env-architect/crates/infrastructure" }
+application = { path = "packages/env-architect/crates/application" }
+
+anyhow = "1.0"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.36", features = ["full"] }
+clap = { version = "4.5", features = ["derive"] }
+crossterm = "0.27"
+dialoguer = "0.11"
+indicatif = "0.17"
+comfy-table = "7.1"
+which = "6.0"

@@ -6,6 +6,7 @@
 envArchitect/
 ├── apps/
 │   ├── docs/         # Documentation application (Next.js)
+│   └── cli/          # Command-line interface (Rust)
 ├── packages/
 │   ├── env-architect/  # envArchitect core
 │   └── env/ # environment
