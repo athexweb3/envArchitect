@@ -1,0 +1,51 @@
+{
+	"name": "env-architect-vscode",
+	"displayName": "EnvArchitect",
+	"description": "Language support for EnvArchitect (env.toml)",
+	"version": "0.1.0",
+	"publisher": "env-architect",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "env-toml",
+				"aliases": [
+					"EnvArchitect Manifest",
+					"env-toml"
+				],
+				"extensions": [
+					"env.toml"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"commands": [
+			{
+				"command": "env-architect.restartServer",
+				"title": "EnvArchitect: Restart Language Server"
+			}
+		]
+	},
+	"activationEvents": [
+		"onLanguage:env-toml"
+	],
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.85.0",
+		"@types/node": "^18.0.0",
+		"typescript": "^5.3.0"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^9.0.0"
+	}
+}
