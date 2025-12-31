@@ -13,7 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 # The FACADE dependency
-env-architect = { path = "../../packages/env-architect" }
+env-architect = { workspace = true }
 
 anyhow = { workspace = true }
 clap = { workspace = true }

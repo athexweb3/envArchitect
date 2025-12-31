@@ -20,6 +20,7 @@ license = "MIT"
 
 [workspace.dependencies]
 env-architect = { path = "packages/env-architect" }
+database = { path = "packages/database" }
 # Internal crate links for the facade to work
 domain = { path = "packages/env-architect/crates/domain" }
 infrastructure = { path = "packages/env-architect/crates/infrastructure" }

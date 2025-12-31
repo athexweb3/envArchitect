@@ -8,7 +8,7 @@ license.workspace = true
 
 [dependencies]
 # Workspace
-database = { path = "../../packages/database" }
+database = { workspace = true }
 
 # System
 tokio = { workspace = true }

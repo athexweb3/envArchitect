@@ -17,7 +17,7 @@ serde_json = { workspace = true }
 
 # Database
 sqlx = { workspace = true }
-database = { path = "../../packages/database" }
+database = { workspace = true }
 
 # System
 tokio = { workspace = true }
