@@ -13,6 +13,7 @@ members = [
 [workspace.package]
 version = "0.1.0"
 authors = ["athexweb3 <athexweb3@gmail.com>"]
+description = "A declarative environment architecture tool for defining, versioning, and distributing development environments."
 repository = "https://github.com/athexweb3/envArchitect"
 homepage = "https://github.com/athexweb3/envArchitect"
 edition = "2021"
