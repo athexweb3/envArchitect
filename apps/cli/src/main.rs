@@ -18,6 +18,19 @@ enum Commands {
     Install { name: String },
     /// Audit the system
     Audit,
+    /// Login to the Registry
+    Login,
+    /// Publish a plugin to the Registry
+    Publish {
+        /// Path to the plugin manifest (env.toml)
+        #[arg(short, long, default_value = "env.toml")]
+        manifest: String,
+    },
+    /// Search for plugins
+    Search {
+        /// Query string
+        query: String,
+    },
 }
 
 #[tokio::main]
@@ -36,6 +49,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Audit => {
             println!("Auditing system...");
+        }
+        Commands::Login => {
+            println!("TODO: Implement Login Flow");
+        }
+        Commands::Publish { manifest } => {
+            println!("TODO: Publish plugin from manifest: {}", manifest);
+        }
+        Commands::Search { query } => {
+            println!("TODO: Search for: {}", query);
         }
     }
 

@@ -1,0 +1,23 @@
+[package]
+name = "registry-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web Framework
+axum = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+database = { path = "../../packages/database" }
+
+# System
+tokio = { workspace = true }
+anyhow = { workspace = true }
+dotenv = { workspace = true }
+uuid = { workspace = true, features = ["serde"] }
