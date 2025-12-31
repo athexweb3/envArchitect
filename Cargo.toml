@@ -10,6 +10,14 @@ members = [
     "packages/env-architect/crates/*",
 ]
 
+[workspace.package]
+version = "0.1.0"
+authors = ["athexweb3 <athexweb3@gmail.com>"]
+repository = "https://github.com/athexweb3/envArchitect"
+homepage = "https://github.com/athexweb3/envArchitect"
+edition = "2021"
+license = "MIT"
+
 [workspace.dependencies]
 env-architect = { path = "packages/env-architect" }
 # Internal crate links for the facade to work

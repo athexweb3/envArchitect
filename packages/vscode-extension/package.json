@@ -1,9 +1,10 @@
 {
-	"name": "env-architect-vscode",
+	"name": "@env-architect/vscode-extension",
 	"displayName": "EnvArchitect",
 	"description": "Language support for EnvArchitect (env.toml)",
 	"version": "0.1.0",
 	"publisher": "env-architect",
+	"author": "athexweb3 <athexweb3@gmail.com>",
 	"engines": {
 		"vscode": "^1.85.0"
 	},

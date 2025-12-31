@@ -1,5 +1,7 @@
 {
-	"name": "envArchitect",
+	"name": "@env-architect/root",
+	"version": "0.1.0",
+	"author": "athexweb3 <athexweb3@gmail.com>",
 	"private": true,
 	"workspaces": [
 		"apps/*",

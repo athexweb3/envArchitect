@@ -1,6 +1,7 @@
 {
-	"name": "@envArchitect/env",
+	"name": "@env-architect/env",
 	"version": "0.0.0",
+	"author": "athexweb3 <athexweb3@gmail.com>",
 	"private": true,
 	"type": "module",
 	"exports": {
