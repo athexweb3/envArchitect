@@ -1,12 +1,21 @@
-pub mod ui;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use env_architect::domain::entities::tool::Tool;
-use env_architect::infrastructure::adapters::brew::BrewAdapter;
-// use application::install_tool;
+use std::path::PathBuf;
+use url::Url;
+
+// Import application services
+// Use application crate directly
+use application::InstallService;
+
+mod commands;
+mod core;
+mod host;
+mod ui;
+mod utils;
 
 #[derive(Parser)]
-#[command(name = "env-architect")]
-#[command(about = "Architect your developer environment", long_about = None)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -14,50 +23,125 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Install a specific tool
-    Install { name: String },
-    /// Audit the system
-    Audit,
-    /// Login to the Registry
-    Login,
-    /// Publish a plugin to the Registry
-    Publish {
-        /// Path to the plugin manifest (env.toml)
-        #[arg(short, long, default_value = "env.toml")]
-        manifest: String,
+    /// Install an environment from a file (or registry)
+    Install {
+        /// Path to the environment file (env.toml/json/yaml). If not provided, searches current directory.
+        #[arg(short, long)]
+        path: Option<PathBuf>,
+
+        /// Force re-resolution
+        #[arg(long, short)]
+        force: bool,
     },
+
+    /// Resolve an environment using a WASM plugin (Host Runtime Check)
+    Resolve(commands::resolve::ResolveCommand),
+
+    /// Publish a package to the registry
+    Publish {
+        /// Path to the package manifest (env.toml)
+        #[arg(default_value = "env.toml")]
+        path: PathBuf,
+    },
+
     /// Search for plugins
     Search {
         /// Query string
         query: String,
     },
+
+    /// Audit the system
+    Audit,
+
+    /// Login to the Registry
+    Login,
+
+    /// Hot-reloading development loop for plugins
+    Dev(commands::dev::DevCommand),
+
+    /// Activate a project environment in a new shell
+    Shell(commands::shell::ShellCommand),
+
+    /// Run a command in the project context
+    Run(commands::run::RunCommand),
+
+    /// [Internal] The architect shim proxy
+    #[command(hide = true)]
+    Shim {
+        /// The name of the tool being shimmed
+        tool: String,
+        /// Arguments for the tool
+        #[arg(last = true)]
+        args: Vec<String>,
+    },
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
+    // Initialize logging/tracing if needed
+    // tracing_subscriber::fmt::init();
+
     let cli = Cli::parse();
 
-    // Initialize adapters
-    let brew = BrewAdapter::new();
-
     match cli.command {
-        Commands::Install { name } => {
-            let tool = Tool::new(&name);
-            // In real app, we would use the application layer here
-            // application::install_tool(tool, &brew).await?;
-            println!("Simulating install of: {}", name);
+        Commands::Install { path, force } => {
+            println!("🚀 EnvArchitect - Install");
+            println!("⚠️  Force mode: {}", force);
+
+            let (_manifest_path, manifest) = match path {
+                Some(p) => {
+                    println!("📄 Loading manifest from: {:?}", p);
+                    (p.clone(), utils::loader::load_manifest(&p)?)
+                }
+                None => {
+                    println!("🔍 Searching for manifest in current directory...");
+                    utils::loader::find_and_load_manifest(&std::env::current_dir()?)?
+                }
+            };
+
+            println!("✅ Loaded project: {}", &manifest.project.name);
+
+            let registry_url =
+                Url::parse("https://registry.env-architect.dev").context("Invalid registry URL")?;
+
+            let tuf_root = PathBuf::from(".env-architect/tuf");
+            let tuf_cache = PathBuf::from(".env-architect/cache");
+
+            // Create cache directories
+            std::fs::create_dir_all(&tuf_root)?;
+            std::fs::create_dir_all(&tuf_cache)?;
+
+            let mut service = InstallService::new(registry_url, tuf_root, tuf_cache)?;
+
+            // Execute installation from manifest
+            service.install_from_manifest(manifest).await?;
         }
-        Commands::Audit => {
-            println!("Auditing system...");
+        Commands::Resolve(cmd) => {
+            cmd.execute().await?;
         }
-        Commands::Login => {
-            println!("TODO: Implement Login Flow");
-        }
-        Commands::Publish { manifest } => {
-            println!("TODO: Publish plugin from manifest: {}", manifest);
+        Commands::Publish { path } => {
+            println!("📦 TODO: Publish package from manifest: {:?}", path);
         }
         Commands::Search { query } => {
-            println!("TODO: Search for: {}", query);
+            println!("🔍 Searching for: {}", query);
+        }
+        Commands::Audit => {
+            println!("🛡️  Auditing system...");
+        }
+        Commands::Login => {
+            println!("🔐 Login flow initiated");
+        }
+        Commands::Dev(cmd) => {
+            cmd.execute().await?;
+        }
+        Commands::Shell(cmd) => {
+            cmd.execute().await?;
+        }
+        Commands::Run(cmd) => {
+            cmd.execute().await?;
+        }
+        Commands::Shim { tool, args } => {
+            commands::shim::execute_shim(tool, args).await?;
         }
     }
 

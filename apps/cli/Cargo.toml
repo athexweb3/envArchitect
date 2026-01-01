@@ -14,11 +14,31 @@ path = "src/main.rs"
 [dependencies]
 # The FACADE dependency
 env-architect = { workspace = true }
+env-manifest = { path = "../../packages/manifest" }
+
+# Application layer (Brain Integration)
+application = { path = "../../packages/env-architect/crates/application" }
 
 anyhow = { workspace = true }
 clap = { workspace = true }
 tokio = { workspace = true }
-crossterm = { workspace = true }
-dialoguer = { workspace = true }
+console = "0.15"
+inquire = "0.7"
 indicatif = { workspace = true }
+owo-colors = "4.0"
+termimad = "0.20"
 comfy-table = { workspace = true }
+thiserror = "1.0"
+miette = { version = "7.0", features = ["fancy"] }
+ratatui = "0.26"
+url = "2.5"
+
+# WASM Host Runtime
+wasmtime = "26.0"
+wasmtime-wasi = "26.0"
+wit-bindgen = { version = "0.36.0", features = ["realloc"] }
+async-trait = "0.1"
+serde_json = { workspace = true }
+serde_yaml = "0.9.34"
+toml = "0.8"
+notify = "6.1"
