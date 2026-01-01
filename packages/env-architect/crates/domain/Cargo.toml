@@ -7,6 +7,31 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-petgraph = "0.8.3"
+petgraph = { workspace = true }
+resolvo = "0.10"
+tough = { version = "0.21", features = ["http"] }
+url = "2.5"
+semver = { version = "1.0", features = ["serde"] }
+tokio = { workspace = true }
+futures-util = "0.3"
 serde = { workspace = true }
+serde_json = "1.0"
 thiserror = { workspace = true }
+anyhow = { workspace = true }
+sigstore = "0.8"
+
+# OS and system detection
+os_info = "3.7"
+sysinfo = "0.30"
+
+# Filesystem traversal
+walkdir = "2.4"
+dirs = "5.0"
+
+# Multi-format manifest parsing
+toml = "0.8"
+serde_yaml = "0.9"
+env-manifest = { version = "0.1.0", path = "../../../manifest" }
+
+[dev-dependencies]
+tempfile = "3.8"
