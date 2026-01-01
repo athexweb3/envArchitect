@@ -1,0 +1,28 @@
+[package]
+name = "env-architect-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "SDK for creating environment packages for EnvArchitect"
+license = "MIT"
+
+[dependencies]
+# Re-export domain types (temporarily relative, will be published)
+# domain = { path = "../../../env-architect/crates/domain" }
+
+# Core dependencies (Latest stable versions as of Dec 2025)
+anyhow = "1.0.95"
+thiserror = "2.0.9"
+semver = { version = "1.0.24", features = ["serde"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.135"
+toml = "0.8"
+async-trait = "0.1.85"
+futures = "0.3"
+tracing = "0.1.41"
+once_cell = "1.19"
+wit-bindgen = { version = "0.36.0", features = ["realloc"] }
+env-architect-macros = { path = "../macros" }
+env-manifest = { version = "0.1.0", path = "../../../manifest" }
+
+[dev-dependencies]
+tokio = { version = "1.42.0", features = ["full"] }
