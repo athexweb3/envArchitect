@@ -5,13 +5,13 @@
     "": {
       "name": "envArchitect",
       "dependencies": {
-        "@envArchitect/env": "*",
+        "@env-architect/env": "*",
         "dotenv": "^17.2.2",
         "zod": "^4.1.13",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.2.0",
-        "@envArchitect/config": "*",
+        "@env-architect/config": "*",
         "husky": "^9.1.7",
         "lint-staged": "^16.1.2",
         "turbo": "^2.6.3",
@@ -42,11 +42,11 @@
       },
     },
     "packages/config": {
-      "name": "@envArchitect/config",
+      "name": "@env-architect/config",
       "version": "0.0.0",
     },
     "packages/env": {
-      "name": "@envArchitect/env",
+      "name": "@env-architect/env",
       "version": "0.0.0",
       "dependencies": {
         "@t3-oss/env-nextjs": "^0.13.1",
@@ -54,12 +54,12 @@
         "zod": "^4.1.13",
       },
       "devDependencies": {
-        "@envArchitect/config": "*",
+        "@env-architect/config": "*",
         "typescript": "^5",
       },
     },
     "packages/vscode-extension": {
-      "name": "env-architect-vscode",
+      "name": "@env-architect/vscode-extension",
       "version": "0.1.0",
       "dependencies": {
         "vscode-languageclient": "^9.0.0",
@@ -94,9 +94,11 @@
 
     "@emnapi/runtime": ["@emnapi/runtime@1.7.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-PVtJr5CmLwYAU9PZDMITZoR5iAOShYREoR45EyyLrbntV50mdePTgUn4AmOw90Ifcj+x2kRjdzr1HP3RrNiHGA=="],
 
-    "@envArchitect/config": ["@envArchitect/config@workspace:packages/config"],
+    "@env-architect/config": ["@env-architect/config@workspace:packages/config"],
 
-    "@envArchitect/env": ["@envArchitect/env@workspace:packages/env"],
+    "@env-architect/env": ["@env-architect/env@workspace:packages/env"],
+
+    "@env-architect/vscode-extension": ["@env-architect/vscode-extension@workspace:packages/vscode-extension"],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.27.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-GZMB+a0mOMZs4MpDbj8RJp4cw+w1WV5NYD6xzgvzUJ5Ek2jerwfO2eADyI6ExDSUED+1X8aMbegahsJi+8mgpw=="],
 
@@ -475,8 +477,6 @@
     "emoji-regex": ["emoji-regex@10.6.0", "", {}, "sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A=="],
 
     "enhanced-resolve": ["enhanced-resolve@5.18.4", "", { "dependencies": { "graceful-fs": "^4.2.4", "tapable": "^2.2.0" } }, "sha512-LgQMM4WXU3QI+SYgEc2liRgznaD5ojbmY3sb8LxyguVkIg5FxdpTkvk72te2R38/TGKxH634oLxXRGY6d7AP+Q=="],
-
-    "env-architect-vscode": ["env-architect-vscode@workspace:packages/vscode-extension"],
 
     "environment": ["environment@1.1.0", "", {}, "sha512-xUtoPkMggbz0MPyPiIWr1Kp4aeWJjDZ6SMvURhimjdZgsRuDplF5/s9hcgGhyXMhs+6vpnuoiZ2kFiu3FMnS8Q=="],
 
