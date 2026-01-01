@@ -6,7 +6,9 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
+
 [dependencies]
+
 domain = { path = "crates/domain" }
 infrastructure = { path = "crates/infrastructure" }
 application = { path = "crates/application" }
