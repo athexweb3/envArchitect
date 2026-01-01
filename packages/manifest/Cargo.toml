@@ -1,0 +1,23 @@
+[package]
+name = "env-manifest"
+version = "0.1.0"
+edition = "2021"
+description = "The authoritative manifest specification for EnvArchitect"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+schemars = { version = "0.8", features = [
+    "derive",
+    "semver",
+    "url",
+] } # Crucial for JSON Schema
+semver = { version = "1.0", features = ["serde"] }
+anyhow = { workspace = true }
+url = { version = "2.5.7", features = ["serde"] }
+humantime-serde = "1.1.1"
+
+[dev-dependencies]
+pretty_assertions = "1"

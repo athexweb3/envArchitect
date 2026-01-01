@@ -1,0 +1,50 @@
+package env-architect:plugin;
+
+/// Host-mediated interfaces for plugins
+interface host {
+    /// Progress and messaging
+    log: func(level: log-level, message: string);
+    
+    /// Host UI interactions
+    confirm: func(prompt: string, default: bool) -> bool;
+    input: func(prompt: string, default: option<string>) -> string;
+    secret: func(prompt: string) -> string;
+    select: func(prompt: string, options: list<string>, default: option<string>) -> string;
+    
+    /// File System & Env (Virtualized)
+    get-env: func(key: string) -> option<string>;
+    read-file: func(path: string) -> result<string, string>;
+
+    enum log-level {
+        debug,
+        info,
+        warn,
+        error
+    }
+}
+
+world plugin {
+    import host;
+
+    /// 1. Metadata Validation
+    /// Called when the host parses the manifest to ensure custom plugin-specific rules.
+    export validate: func(manifest-json: string) -> list<string>;
+
+    /// 2. Dependency Resolution
+    /// The core hook: transforms current context into an execution plan.
+    export resolve: func(context-json: string) -> result<resolution-output, string>;
+
+    /// 3. Side Effects (Optional)
+    /// Performs actual system changes (e.g., creating symlinks, downloading binaries).
+    export install: func(context: installation-context) -> result<_, string>;
+
+    record resolution-output {
+        plan-json: string,
+        state: option<string>
+    }
+
+    record installation-context {
+        plan-json: string,
+        state: option<string>
+    }
+}

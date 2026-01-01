@@ -1,0 +1,678 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "EnhancedManifest",
+	"description": "Enhanced manifest with multi-format support (JSON, YAML, TOML) Follows the specification from enhanced_manifest_proposal.md",
+	"type": "object",
+	"properties": {
+		"assets": {
+			"description": "Static assets for air-gap bundling (Gov/Enterprise)",
+			"default": [],
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/Asset"
+			}
+		},
+		"build-dependencies": {
+			"description": "Build-time dependencies",
+			"default": {},
+			"anyOf": [
+				{
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/DependencySpec"
+					}
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"cache": {
+			"default": null,
+			"anyOf": [
+				{
+					"$ref": "#/definitions/CacheConfig"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"capabilities": {
+			"description": "Security capability requests",
+			"default": null,
+			"type": ["array", "null"],
+			"items": {
+				"$ref": "#/definitions/Capability"
+			}
+		},
+		"conflicts": {
+			"description": "Conflict declarations (incompatible packages)",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"type": "string"
+			}
+		},
+		"dependencies": {
+			"description": "Main production dependencies (REQUIRED: at least one entry)",
+			"default": {},
+			"anyOf": [
+				{
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/DependencySpec"
+					}
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"dev-dependencies": {
+			"description": "Development-only dependencies",
+			"default": {},
+			"anyOf": [
+				{
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/DependencySpec"
+					}
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"env": {
+			"description": "Environment variables",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"type": "string"
+			}
+		},
+		"extras": {
+			"description": "Optional feature sets (extras)",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"type": "array",
+				"items": {
+					"type": "string"
+				}
+			}
+		},
+		"group": {
+			"description": "Dependency groups (à la Poetry)",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "#/definitions/DependencyGroup"
+			}
+		},
+		"hooks": {
+			"description": "Lifecycle hooks (à la npm)",
+			"default": null,
+			"anyOf": [
+				{
+					"$ref": "#/definitions/LifecycleHooks"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"lockfile": {
+			"description": "Lockfile and cache settings",
+			"default": null,
+			"anyOf": [
+				{
+					"$ref": "#/definitions/LockfileConfig"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"platform": {
+			"description": "Platform constraints (OS, architecture, versions)",
+			"default": null,
+			"anyOf": [
+				{
+					"$ref": "#/definitions/PlatformConstraints"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"profiles": {
+			"description": "Environment profiles (à la docker-compose)",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "#/definitions/Profile"
+			}
+		},
+		"project": {
+			"description": "Project metadata (name, version, etc.)",
+			"default": {
+				"authors": [],
+				"description": "",
+				"homepage": null,
+				"license": "",
+				"name": "",
+				"repository": null,
+				"version": "0.0.0"
+			},
+			"allOf": [
+				{
+					"$ref": "#/definitions/ProjectMetadata"
+				}
+			]
+		},
+		"scripts": {
+			"description": "Named scripts",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "#/definitions/ScriptCommand"
+			}
+		},
+		"services": {
+			"description": "Background services (daemons)",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "#/definitions/ServiceDef"
+			}
+		},
+		"target": {
+			"description": "Platform-specific dependencies (à la Cargo)",
+			"default": {},
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "#/definitions/TargetDependencies"
+			}
+		},
+		"test-dependencies": {
+			"description": "Test-only dependencies",
+			"default": {},
+			"anyOf": [
+				{
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/DependencySpec"
+					}
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		}
+	},
+	"additionalProperties": false,
+	"definitions": {
+		"Asset": {
+			"description": "An external asset bundle.",
+			"type": "object",
+			"required": ["checksum", "name", "url"],
+			"properties": {
+				"checksum": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"url": {
+					"type": "string",
+					"format": "uri"
+				}
+			}
+		},
+		"CacheConfig": {
+			"description": "Cache settings for the environment.",
+			"type": "object",
+			"properties": {
+				"enabled": {
+					"description": "Enable caching.",
+					"default": true,
+					"type": "boolean"
+				},
+				"ttl": {
+					"description": "Time-to-live for cached entries (e.g., \"24h\", \"30m\").",
+					"default": "1day",
+					"type": "string"
+				}
+			}
+		},
+		"Capability": {
+			"description": "Security capabilities requested by the plugin/environment. These define what system resources the code can access.",
+			"oneOf": [
+				{
+					"description": "Allow network outbound access to specific hosts.",
+					"type": "object",
+					"required": ["network"],
+					"properties": {
+						"network": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					},
+					"additionalProperties": false
+				},
+				{
+					"description": "Allow read access to specific filesystem paths.",
+					"type": "object",
+					"required": ["fs-read"],
+					"properties": {
+						"fs-read": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					},
+					"additionalProperties": false
+				},
+				{
+					"description": "Allow write access to specific filesystem paths.",
+					"type": "object",
+					"required": ["fs-write"],
+					"properties": {
+						"fs-write": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					},
+					"additionalProperties": false
+				},
+				{
+					"description": "Allow access to system devices (e.g., `/dev/ttyUSB0`).",
+					"type": "object",
+					"required": ["device"],
+					"properties": {
+						"device": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					},
+					"additionalProperties": false
+				},
+				{
+					"description": "Allow interaction with the user (prompts, confirmation).",
+					"type": "string",
+					"enum": ["ui-interact"]
+				},
+				{
+					"description": "Allow requesting secrets (masked input) from the user.",
+					"type": "string",
+					"enum": ["ui-secret"]
+				},
+				{
+					"description": "Allow controlling specific background services (systemd, launchd).",
+					"type": "object",
+					"required": ["service-control"],
+					"properties": {
+						"service-control": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					},
+					"additionalProperties": false
+				}
+			]
+		},
+		"CpuArchitecture": {
+			"type": "string",
+			"enum": [
+				"x86_64",
+				"amd64",
+				"aarch64",
+				"arm64",
+				"arm",
+				"wasm32",
+				"riscv64",
+				"*"
+			]
+		},
+		"DependencyDetails": {
+			"description": "Detailed configuration for a dependency.",
+			"type": "object",
+			"required": ["version"],
+			"properties": {
+				"manager": {
+					"description": "Explicit package manager to use.",
+					"anyOf": [
+						{
+							"$ref": "#/definitions/PackageManager"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"optional": {
+					"description": "Whether this dependency is optional.",
+					"default": false,
+					"type": "boolean"
+				},
+				"source": {
+					"description": "Custom source URL (git repo, tarball, etc). Kept as String because it might be a file path or non-standard URI.",
+					"type": ["string", "null"]
+				},
+				"version": {
+					"description": "Version requirement (SemVer range).",
+					"type": "string"
+				}
+			}
+		},
+		"DependencyGroup": {
+			"description": "A logical group of dependencies.",
+			"type": "object",
+			"required": ["dependencies"],
+			"properties": {
+				"dependencies": {
+					"description": "Dependencies belonging to this group.",
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/DependencySpec"
+					}
+				},
+				"optional": {
+					"description": "Whether this group is installed by default.",
+					"default": false,
+					"type": "boolean"
+				}
+			}
+		},
+		"DependencySpec": {
+			"description": "A dependency specification.",
+			"anyOf": [
+				{
+					"description": "Simple version string (e.g., `^1.0.0`).",
+					"type": "string"
+				},
+				{
+					"description": "Detailed configuration object.",
+					"allOf": [
+						{
+							"$ref": "#/definitions/DependencyDetails"
+						}
+					]
+				}
+			]
+		},
+		"LifecycleHooks": {
+			"description": "Hooks that run at specific points in the lifecycle.",
+			"type": "object",
+			"properties": {
+				"post_activate": {
+					"type": ["string", "null"]
+				},
+				"post_deactivate": {
+					"type": ["string", "null"]
+				},
+				"post_install": {
+					"type": ["string", "null"]
+				},
+				"pre_activate": {
+					"type": ["string", "null"]
+				},
+				"pre_deactivate": {
+					"type": ["string", "null"]
+				},
+				"pre_install": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"LockfileConfig": {
+			"description": "Lockfile generation settings.",
+			"type": "object",
+			"properties": {
+				"commit_recommendation": {
+					"description": "Remind user to commit lock file if git is detected.",
+					"default": true,
+					"type": "boolean"
+				},
+				"generate": {
+					"description": "Auto-generate `env.lock` on install.",
+					"default": true,
+					"type": "boolean"
+				}
+			}
+		},
+		"OperatingSystem": {
+			"type": "string",
+			"enum": [
+				"linux",
+				"macos",
+				"windows",
+				"freebsd",
+				"openbsd",
+				"netbsd",
+				"dragonfly",
+				"ios",
+				"android",
+				"*"
+			]
+		},
+		"PackageManager": {
+			"description": "Supported package managers.",
+			"type": "string",
+			"enum": [
+				"npm",
+				"pip",
+				"pip3",
+				"cargo",
+				"gem",
+				"go",
+				"maven",
+				"gradle",
+				"composer",
+				"nuget",
+				"chocolatey",
+				"brew",
+				"apt",
+				"yum",
+				"pacman",
+				"docker"
+			]
+		},
+		"PlatformConstraints": {
+			"description": "Constraints on where this environment can run.",
+			"type": "object",
+			"properties": {
+				"architectures": {
+					"description": "Allowed CPU architectures.",
+					"default": ["*"],
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/CpuArchitecture"
+					}
+				},
+				"platforms": {
+					"description": "Allowed operating systems.",
+					"default": ["*"],
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/OperatingSystem"
+					}
+				},
+				"requirements": {
+					"description": "Minimum version requirements for the OS (e.g., `macos: \">=12.0\"`).",
+					"default": {},
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"Profile": {
+			"description": "Configuration profile (like overrides).",
+			"type": "object",
+			"properties": {
+				"dependencies": {
+					"default": [],
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"description": {
+					"default": "",
+					"type": "string"
+				},
+				"env": {
+					"default": {},
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					}
+				},
+				"exclude_groups": {
+					"default": [],
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"ProjectMetadata": {
+			"description": "Project identity and metadata.\n\nThis section defines who the project belongs to, what it is called, and how it is licensed.",
+			"type": "object",
+			"properties": {
+				"authors": {
+					"description": "List of authors or maintainers.",
+					"default": [],
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"description": {
+					"description": "A short, human-readable description of what the project does.",
+					"default": "",
+					"type": "string"
+				},
+				"homepage": {
+					"description": "URL to the project homepage.",
+					"default": null,
+					"type": ["string", "null"],
+					"format": "uri"
+				},
+				"license": {
+					"description": "SPDX license identifier.",
+					"default": "",
+					"type": "string"
+				},
+				"name": {
+					"description": "The name of the project. Should be kebab-case (e.g., `my-cool-project`).",
+					"default": "",
+					"type": "string"
+				},
+				"repository": {
+					"description": "URL to the source code repository.",
+					"default": null,
+					"type": ["string", "null"],
+					"format": "uri"
+				},
+				"version": {
+					"description": "The semantic version of the project. Strictly checked against SemVer 2.0.0.",
+					"default": "0.0.0",
+					"type": "string"
+				}
+			}
+		},
+		"RestartPolicy": {
+			"type": "string",
+			"enum": ["no", "always", "on-failure"]
+		},
+		"ScriptCommand": {
+			"description": "A command to run.",
+			"anyOf": [
+				{
+					"description": "A single string command to run in a shell.",
+					"type": "string"
+				},
+				{
+					"description": "A sequence of commands to run (chain execution).",
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"ServiceDef": {
+			"description": "Definition of a background service.",
+			"type": "object",
+			"required": ["command"],
+			"properties": {
+				"command": {
+					"description": "The command to start the service.",
+					"type": "string"
+				},
+				"env": {
+					"description": "Environment variables specific to this service.",
+					"default": {},
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					}
+				},
+				"restart": {
+					"description": "Restart policy for the service.",
+					"default": "on-failure",
+					"allOf": [
+						{
+							"$ref": "#/definitions/RestartPolicy"
+						}
+					]
+				},
+				"user": {
+					"description": "User to run the service as (default: current user).",
+					"default": null,
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"TargetDependencies": {
+			"description": "Target-specific dependencies.",
+			"type": "object",
+			"required": ["dependencies"],
+			"properties": {
+				"dependencies": {
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/DependencySpec"
+					}
+				}
+			}
+		}
+	}
+}
