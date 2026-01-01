@@ -11,3 +11,8 @@ domain = { path = "../domain" }
 anyhow = { workspace = true }
 which = { workspace = true }
 tokio = { workspace = true }
+
+# Runtime Security
+wasmtime = "40.0"
+wasmtime-wasi = { version = "40.0", features = ["p1"] }
+cap-std = "3.0"                                         # Latest stable
