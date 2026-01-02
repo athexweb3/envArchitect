@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 pub struct GlobalStateService {
-    config_dir: PathBuf,
+    // config_dir: PathBuf, // Removed unused field
     manifest_path: PathBuf,
 }
 
@@ -19,10 +19,7 @@ impl GlobalStateService {
             fs::create_dir_all(&config_dir).context("Failed to create config dir")?;
         }
 
-        Ok(Self {
-            config_dir,
-            manifest_path,
-        })
+        Ok(Self { manifest_path })
     }
 
     /// Load the global manifest. Returns default if it doesn't exist.
@@ -66,14 +63,6 @@ impl GlobalStateService {
         };
 
         manifest.tools.insert(name.to_string(), tool);
-        self.save(&manifest)?;
-        Ok(())
-    }
-
-    /// Remove a tool from the global registry.
-    pub fn remove_tool(&self, name: &str) -> Result<()> {
-        let mut manifest = self.load()?;
-        manifest.tools.remove(name);
         self.save(&manifest)?;
         Ok(())
     }

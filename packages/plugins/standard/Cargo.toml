@@ -11,11 +11,13 @@ crate-type = ["cdylib"]
 [dependencies]
 # SDK
 env-architect-sdk = { path = "../../sdks/rust/sdk" }
+wit-bindgen = "0.26.0"
 # Logic
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
-env-plugin-doctor = { path = "../doctor" }
+async-trait = "0.1"
+
 
 [package.metadata.plugin]
 capabilities = ["fs-read"]
