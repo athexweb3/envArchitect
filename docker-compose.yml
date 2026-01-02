@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d env_architect"]
+      test: [ "CMD-SHELL", "pg_isready -U admin -d env_architect" ]
       interval: 5s
       timeout: 5s
       retries: 5

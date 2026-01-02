@@ -23,7 +23,7 @@ async fn login_handler() -> Redirect {
 #[derive(Deserialize)]
 struct CallbackQuery {
     code: String,
-    state: Option<String>,
+    // state: Option<String>,
 }
 
 async fn callback_handler(
