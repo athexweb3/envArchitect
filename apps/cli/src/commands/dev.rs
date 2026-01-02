@@ -24,7 +24,7 @@ impl DevCommand {
             console::style("EnvArchitect Dev Mode").bold(),
             console::style(env!("CARGO_PKG_VERSION")).dim()
         ))?;
-        
+
         cliclack::log::info(format!("Watching path: {:?}", self.path))?;
 
         // Initial run
@@ -59,7 +59,7 @@ impl DevCommand {
                 while rx.try_recv().is_ok() {}
 
                 cliclack::log::step("Change detected! Re-running plugin...")?;
-                
+
                 if let Err(e) = self.run_iteration().await {
                     cliclack::log::error(format!("Dev iteration failed: {}", e))?;
                 }
@@ -70,7 +70,7 @@ impl DevCommand {
     async fn run_iteration(&self) -> Result<()> {
         // 1. Rebuild if it's a Rust project (simple check)
         if self.path.join("Cargo.toml").exists() {
-            let mut spinner = cliclack::spinner();
+            let spinner = cliclack::spinner();
             spinner.start("Detecting project type...");
 
             spinner.start("Building Wasm binary (Rust)...");
@@ -158,7 +158,7 @@ impl DevCommand {
         cliclack::log::info(format!("Component output path: {:?}", component_path))?;
 
         if self.path.join("Cargo.toml").exists() {
-            let mut spinner = cliclack::spinner();
+            let spinner = cliclack::spinner();
             spinner.start("Checking adapters...");
 
             // Step 0: Ensure WASI Adapter exists
