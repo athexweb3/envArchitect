@@ -70,7 +70,7 @@ impl DevCommand {
     async fn run_iteration(&self) -> Result<()> {
         // 1. Rebuild if it's a Rust project (simple check)
         if self.path.join("Cargo.toml").exists() {
-            let mut spinner = cliclack::spinner();
+            let spinner = cliclack::spinner();
             spinner.start("Detecting project type...");
 
             spinner.start("Building Wasm binary (Rust)...");
@@ -158,7 +158,7 @@ impl DevCommand {
         cliclack::log::info(format!("Component output path: {:?}", component_path))?;
 
         if self.path.join("Cargo.toml").exists() {
-            let mut spinner = cliclack::spinner();
+            let spinner = cliclack::spinner();
             spinner.start("Checking adapters...");
 
             // Step 0: Ensure WASI Adapter exists

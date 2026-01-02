@@ -47,7 +47,7 @@ impl ResolveCommand {
             return Ok(());
         }
 
-        let mut spinner = cliclack::spinner();
+        let spinner = cliclack::spinner();
         spinner.start("Initializing plugin engine...");
 
         // 1. Configure Wasmtime
@@ -206,7 +206,7 @@ impl ResolveCommand {
                     if let Ok(manifest) =
                         serde_json::from_value::<env_manifest::EnhancedManifest>(manifest_node)
                     {
-                        let mut spinner_v2 = cliclack::spinner();
+                        let spinner_v2 = cliclack::spinner();
                         spinner_v2.start("Finalizing V2 Sovereign Environment...");
 
                         let store = StoreManager::default()?;
