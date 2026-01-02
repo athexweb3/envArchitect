@@ -1,5 +1,4 @@
 use crate::commands::resolve::ResolveCommand;
-use crate::ui::{self, Icon};
 use anyhow::Result;
 use clap::Parser;
 use notify::{Event, RecursiveMode, Watcher};
@@ -20,17 +19,17 @@ pub struct DevCommand {
 
 impl DevCommand {
     pub async fn execute(self) -> Result<()> {
-        ui::println(format!(
-            "{} {} v{}",
-            Icon::Architect,
-            "EnvArchitect Dev Mode",
-            env!("CARGO_PKG_VERSION")
-        ));
-        ui::info(format!("Watching path: {:?}", self.path));
+        cliclack::intro(format!(
+            "{} {}",
+            console::style("EnvArchitect Dev Mode").bold(),
+            console::style(env!("CARGO_PKG_VERSION")).dim()
+        ))?;
+        
+        cliclack::log::info(format!("Watching path: {:?}", self.path))?;
 
         // Initial run
         if let Err(e) = self.run_iteration().await {
-            ui::error(format!("Initial run failed: {}", e));
+            cliclack::log::error(format!("Initial run failed: {}", e))?;
         }
 
         // Setup watcher
@@ -59,12 +58,10 @@ impl DevCommand {
                 // Clear any pending events
                 while rx.try_recv().is_ok() {}
 
-                ui::println(format!(
-                    "\n{} Change detected! Re-running plugin...",
-                    Icon::Rocket
-                ));
+                cliclack::log::step("Change detected! Re-running plugin...")?;
+                
                 if let Err(e) = self.run_iteration().await {
-                    ui::error(format!("Dev iteration failed: {}", e));
+                    cliclack::log::error(format!("Dev iteration failed: {}", e))?;
                 }
             }
         }
@@ -73,10 +70,10 @@ impl DevCommand {
     async fn run_iteration(&self) -> Result<()> {
         // 1. Rebuild if it's a Rust project (simple check)
         if self.path.join("Cargo.toml").exists() {
-            let spinner = ui::components::spinner::Spinner::new("Hot Reload");
-            spinner.set_message("Detecting project type...");
+            let mut spinner = cliclack::spinner();
+            spinner.start("Detecting project type...");
 
-            spinner.set_message("Building Wasm binary (Rust)...");
+            spinner.start("Building Wasm binary (Rust)...");
 
             // Try wasm32-wasip1 first as it's the newer standard, fall back to wasm32-wasi
             let mut status = std::process::Command::new("cargo")
@@ -87,7 +84,7 @@ impl DevCommand {
                 .status();
 
             if status.is_err() || !status.as_ref().unwrap().success() {
-                spinner.set_message("wasm32-wasip1 failed, trying legacy wasm32-wasi...");
+                spinner.start("wasm32-wasip1 failed, trying legacy wasm32-wasi...");
                 status = std::process::Command::new("cargo")
                     .arg("build")
                     .arg("--target")
@@ -98,9 +95,13 @@ impl DevCommand {
 
             if let Ok(s) = status {
                 if !s.success() {
+                    spinner.error("Cargo build failed");
                     anyhow::bail!("Cargo build failed");
+                } else {
+                    spinner.stop("Build complete");
                 }
             } else {
+                spinner.error("Failed to execute cargo build");
                 anyhow::bail!("Failed to execute cargo build");
             }
         }
@@ -153,12 +154,12 @@ impl DevCommand {
             wasm_path.clone()
         };
 
-        ui::info(format!("Using Wasm plugin: {:?}", wasm_path));
-        ui::info(format!("Component output path: {:?}", component_path));
+        cliclack::log::info(format!("Using Wasm plugin: {:?}", wasm_path))?;
+        cliclack::log::info(format!("Component output path: {:?}", component_path))?;
 
         if self.path.join("Cargo.toml").exists() {
-            let spinner = ui::components::spinner::Spinner::new("Componentizing");
-            spinner.set_message("Checking adapters...");
+            let mut spinner = cliclack::spinner();
+            spinner.start("Checking adapters...");
 
             // Step 0: Ensure WASI Adapter exists
             // We need this to bridge wasm32-wasip1 imports to the Component Model.
@@ -166,7 +167,7 @@ impl DevCommand {
             let adapter_path = adapter_dir.join("wasi_snapshot_preview1.reactor.wasm");
 
             if !adapter_path.exists() {
-                spinner.set_message("Downloading WASI adapter...");
+                spinner.start("Downloading WASI adapter...");
                 std::fs::create_dir_all(&adapter_dir).ok();
 
                 let _ = std::process::Command::new("curl")
@@ -176,10 +177,10 @@ impl DevCommand {
                     .arg(&adapter_path)
                     .arg("https://github.com/bytecodealliance/wasmtime/releases/download/v25.0.0/wasi_snapshot_preview1.reactor.wasm")
                     .status();
-                spinner.set_message("Using cached WASI adapter...");
+                spinner.start("Using cached WASI adapter...");
             }
 
-            spinner.set_message("Stripping symbols...");
+            spinner.start("Stripping symbols...");
             let stripped_path = wasm_path.with_extension("stripped.wasm");
             let _ = std::process::Command::new("wasm-tools")
                 .arg("strip")
@@ -203,7 +204,7 @@ impl DevCommand {
                 wit_path = PathBuf::from("../packages/sdks/wit/plugin.wit");
             }
 
-            spinner.set_message("Embedding WIT interface...");
+            spinner.start("Embedding WIT interface...");
             let embedded_path = wasm_path.with_extension("embed.wasm");
 
             let embed_status = std::process::Command::new("wasm-tools")
@@ -218,10 +219,10 @@ impl DevCommand {
                 .status();
 
             if embed_status.is_err() || !embed_status.as_ref().unwrap().success() {
-                spinner.fail("WIT Embedding failed.");
+                spinner.error("WIT Embedding failed.");
             } else {
                 // Step 3: Componentize
-                spinner.set_message("Creating component...");
+                spinner.start("Creating component...");
                 let status = std::process::Command::new("wasm-tools")
                     .arg("component")
                     .arg("new")
@@ -234,7 +235,7 @@ impl DevCommand {
 
                 match status {
                     Ok(s) if s.success() => {
-                        spinner.success("Component created.");
+                        spinner.stop("Component created.");
                         wasm_path = component_path;
                         // cleanup intermediates
                         let _ = std::fs::remove_file(embedded_path);
@@ -243,10 +244,10 @@ impl DevCommand {
                         }
                     }
                     Ok(s) => {
-                        spinner.fail(format!("Componentization failed: {}", s));
+                        spinner.error(format!("Componentization failed: {}", s));
                     }
                     Err(e) => {
-                        spinner.fail(format!("Failed to run wasm-tools: {}", e));
+                        spinner.error(format!("Failed to run wasm-tools: {}", e));
                     }
                 }
             }
