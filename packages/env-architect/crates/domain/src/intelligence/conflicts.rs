@@ -1,8 +1,5 @@
 use super::metrics::MetricsDetector;
-use crate::dependency::solver::SatEngine;
-use crate::intelligence::strategies::{
-    Conflict, ConflictSource, InstallStrategy, Recommendation, Resolution, Risk,
-};
+use crate::intelligence::strategies::{Conflict, InstallStrategy, Recommendation, Risk};
 use crate::system::{InstalledToolsRegistry, PlatformInfo};
 use anyhow::Result;
 use env_manifest::ResolutionAction;
@@ -11,7 +8,7 @@ use semver::{Version, VersionReq};
 /// The main conflict resolution engine
 /// Uses game theory and multi-objective optimization to resolve conflicts
 pub struct ConflictResolver {
-    platform: PlatformInfo,
+    _platform: PlatformInfo,
     registry: InstalledToolsRegistry,
     metrics: MetricsDetector,
 }
@@ -20,7 +17,7 @@ impl ConflictResolver {
     pub fn new(platform: PlatformInfo, registry: InstalledToolsRegistry) -> Self {
         let metrics = MetricsDetector::new(platform.clone());
         Self {
-            platform,
+            _platform: platform,
             registry,
             metrics,
         }

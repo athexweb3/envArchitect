@@ -28,7 +28,7 @@ impl RunCommand {
         let shims_dir = absolute_root.join(".architect").join("shims");
 
         // Update PATH to include project shims
-        let mut path_env = std::env::var("PATH").unwrap_or_default();
+        let path_env = std::env::var("PATH").unwrap_or_default();
         let new_path = format!("{}:{}", shims_dir.to_string_lossy(), path_env);
 
         let mut child = Command::new(&self.command_name)

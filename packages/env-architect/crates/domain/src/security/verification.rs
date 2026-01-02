@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::path::Path;
 
 /// Service for verifying the authenticity and integrity of tool binaries
@@ -15,7 +15,7 @@ impl VerificationService {
     pub async fn verify_binary(
         &self,
         binary_path: &Path,
-        signature_b64: &str,
+        _signature_b64: &str,
         oidc_identity: &str,
     ) -> Result<bool> {
         // Prototype: For now, we simulate the verification logic using mock data
@@ -33,7 +33,7 @@ impl VerificationService {
     }
 
     /// Check the transparency log (Rekor) for a binary hash
-    pub async fn check_transparency_log(&self, content_hash: &str) -> Result<bool> {
+    pub async fn check_transparency_log(&self, _content_hash: &str) -> Result<bool> {
         // Prototype: In production, this queries the Rekor public ledger
         Ok(true)
     }

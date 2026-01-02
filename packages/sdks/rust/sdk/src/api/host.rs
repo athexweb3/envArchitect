@@ -1,4 +1,4 @@
-use crate::api::test::{MockHost, ACTIVE_MOCK};
+use crate::api::test::ACTIVE_MOCK;
 #[allow(unused_imports)]
 use crate::internal::bindings::env_architect::plugin::host;
 use host::LogLevel;
