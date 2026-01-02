@@ -47,7 +47,7 @@ impl ResolveCommand {
             return Ok(());
         }
 
-        let mut spinner = cliclack::spinner();
+        let spinner = cliclack::spinner();
         spinner.start("Initializing plugin engine...");
 
         // 1. Configure Wasmtime
@@ -201,12 +201,11 @@ impl ResolveCommand {
 
                 // Phase 1 V2: Create Shims and Ensure Store for dependencies
                 // Parse the InstallPlan to access the nested manifest
-                if let Some(manifest_node) = valid_json.get("manifest").cloned()
-                {
+                if let Some(manifest_node) = valid_json.get("manifest").cloned() {
                     if let Ok(manifest) =
                         serde_json::from_value::<env_manifest::EnhancedManifest>(manifest_node)
                     {
-                        let mut spinner_v2 = cliclack::spinner();
+                        let spinner_v2 = cliclack::spinner();
                         spinner_v2.start("Finalizing V2 Sovereign Environment...");
 
                         let store = StoreManager::default()?;
@@ -249,8 +248,7 @@ impl ResolveCommand {
                                     ) // Explicit std::path::Path
                                     .await?
                                 {
-                                    spinner_v2
-                                        .start(format!("Downloading {} to Store...", name));
+                                    spinner_v2.start(format!("Downloading {} to Store...", name));
                                     let _ = store.ensure_dir(name, &version, hash)?;
                                 } else {
                                     spinner_v2.error(format!(
@@ -286,13 +284,21 @@ impl ResolveCommand {
                         let drifts = ConsensusEngine::detect_drift(&consensus, &local_tools);
 
                         if !drifts.is_empty() {
-                            cliclack::log::warning("⚠️  Environment Drift Detected (Team vs Local):")?;
+                            cliclack::log::warning(
+                                "⚠️  Environment Drift Detected (Team vs Local):",
+                            )?;
                             for drift in drifts {
                                 let desc = drift.description();
-                                cliclack::log::info(format!("  {} {}", console::style("!").yellow(), desc))?;
+                                cliclack::log::info(format!(
+                                    "  {} {}",
+                                    console::style("!").yellow(),
+                                    desc
+                                ))?;
                             }
 
-                            if cliclack::confirm("Harmonize local environment with team consensus?").interact()? {
+                            if cliclack::confirm("Harmonize local environment with team consensus?")
+                                .interact()?
+                            {
                                 cliclack::log::info("Harmonizing tools...")?;
                                 // TODO: Execute harmonization logic
                             }
@@ -306,7 +312,9 @@ impl ResolveCommand {
                         // Handle Intelligence Data (Proposed Actions)
                         if let Some(intel) = manifest.intelligence {
                             if !intel.proposed_actions.is_empty() {
-                                cliclack::log::warning("Environment conflicts detected. Proposed resolutions:")?;
+                                cliclack::log::warning(
+                                    "Environment conflicts detected. Proposed resolutions:",
+                                )?;
 
                                 for action in &intel.proposed_actions {
                                     match action {
@@ -354,7 +362,10 @@ impl ResolveCommand {
                                 if cliclack::confirm("Apply recommended resolutions?").interact()? {
                                     for action in intel.proposed_actions {
                                         // TODO: Implement actual execution of actions
-                                        cliclack::log::info(format!("Applying resolution: {:?}", action))?;
+                                        cliclack::log::info(format!(
+                                            "Applying resolution: {:?}",
+                                            action
+                                        ))?;
                                     }
                                 }
                             }

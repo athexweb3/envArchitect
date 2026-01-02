@@ -24,6 +24,12 @@ impl InstallPlan {
     }
 }
 
+impl Default for InstallPlan {
+    fn default() -> Self {
+        Self::new(EnhancedManifest::default())
+    }
+}
+
 /// Metadata about the environment package itself
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageMetadata {

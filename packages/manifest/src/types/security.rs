@@ -19,6 +19,9 @@ pub enum Capability {
     /// Allow access to system devices (e.g., `/dev/ttyUSB0`).
     Device(Vec<String>),
 
+    /// Allow executing system commands.
+    SysExec(Vec<String>),
+
     /// Allow interaction with the user (prompts, confirmation).
     UiInteract,
 
@@ -27,6 +30,9 @@ pub enum Capability {
 
     /// Allow controlling specific background services (systemd, launchd).
     ServiceControl(Vec<String>),
+
+    /// Allow reading environment variables.
+    EnvRead(Vec<String>),
 }
 
 pub fn deserialize_capability_list<'de, D>(
@@ -66,6 +72,11 @@ where
                             serde_json::from_value(v).map_err(serde::de::Error::custom)?;
                         Capability::Device(devices)
                     }
+                    "sys-exec" => {
+                        let commands =
+                            serde_json::from_value(v).map_err(serde::de::Error::custom)?;
+                        Capability::SysExec(commands)
+                    }
                     "ui-interact" => {
                         if v.as_bool().unwrap_or(false) {
                             Capability::UiInteract
@@ -84,6 +95,10 @@ where
                         let services =
                             serde_json::from_value(v).map_err(serde::de::Error::custom)?;
                         Capability::ServiceControl(services)
+                    }
+                    "env-read" => {
+                        let envs = serde_json::from_value(v).map_err(serde::de::Error::custom)?;
+                        Capability::EnvRead(envs)
                     }
                     _ => continue,
                 };
