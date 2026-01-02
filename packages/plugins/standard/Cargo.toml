@@ -1,0 +1,21 @@
+[package]
+name = "env-plugin-standard"
+version = "0.1.0"
+edition = "2021"
+authors = ["athexweb3 <athexweb3@gmail.com>"]
+description = "The Standard Library plugin for EnvArchitect, providing auto-detection and presets."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# SDK
+env-architect-sdk = { path = "../../sdks/rust/sdk" }
+# Logic
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+env-plugin-doctor = { path = "../doctor" }
+
+[package.metadata.plugin]
+capabilities = ["fs-read"]

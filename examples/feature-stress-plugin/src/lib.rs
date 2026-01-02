@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use env_architect_sdk::host;
 use env_architect_sdk::prelude::*;
 
 #[env_architect_sdk::plugin]
@@ -8,7 +9,7 @@ struct StressPlugin;
 #[env_architect_sdk::async_trait]
 impl PluginHandler for StressPlugin {
     async fn validate(&self, manifest: &serde_json::Value) -> Result<Vec<String>> {
-        host_ui::info("Stress Test: Validating all sections...");
+        host::info("Stress Test: Validating all sections...");
         let mut errors = Vec::new();
 
         if manifest.get("project").is_none() {
@@ -22,25 +23,25 @@ impl PluginHandler for StressPlugin {
         &self,
         context: &env_architect_sdk::ResolutionContext,
     ) -> Result<(InstallPlan, Option<String>)> {
-        host_ui::info(format!(
+        host::info(format!(
             "Stress Test: Resolving for {}/{}...",
             context.target_os, context.target_arch
         ));
 
         // 1. System Tool Discovery (V2 Feature)
         if let Some(node_versions) = context.system_tools.get("node") {
-            host_ui::info(format!(
+            host::info(format!(
                 "Found {} node versions on host: {:?}",
                 node_versions.len(),
                 node_versions
             ));
         } else {
-            host_ui::warn("Node.js not detected on host system.");
+            host::warn("Node.js not detected on host system.");
         }
 
         // 2. Text Input & Spinner
-        let spinner = host_ui::spinner("Starting deep resolution...");
-        let custom_name = host_ui::input(
+        let spinner = host::spinner("Starting deep resolution...");
+        let custom_name = host::input(
             "Enter a custom environment name",
             Some("stress-env".to_string()),
         );
@@ -51,7 +52,7 @@ impl PluginHandler for StressPlugin {
             .project(&custom_name, "1.0.0");
 
         // 3. Select & Multi-step Logic
-        let db_type = host_ui::select(
+        let db_type = host::select(
             "Select database provider",
             &["postgres", "mysql", "sqlite"],
             Some("postgres".to_string()),
@@ -59,7 +60,7 @@ impl PluginHandler for StressPlugin {
         builder = builder.add_dependency(&format!("{}-client", db_type), ">=14.0.0");
 
         // 4. Confirm & Conditional Builder Calls
-        if host_ui::confirm("Enable advanced monitoring?", true) {
+        if host::confirm("Enable advanced monitoring?", true) {
             builder = builder.add_dev_dependency("monitoring-agent", "^2.1.0");
             builder = builder.service("monitor", ServiceDef::new("monitoring-agent --port 9090"));
         }
@@ -77,9 +78,9 @@ impl PluginHandler for StressPlugin {
         }
 
         // 6. Secret & Capability Check
-        let api_key = host_ui::secret("Enter sensitive API token");
+        let api_key = host::secret("Enter sensitive API token");
         if !api_key.is_empty() {
-            host_ui::success("API Token received and validated.");
+            host::success("API Token received and validated.");
         }
 
         // 7. Conflict Management & Platform Constraints
@@ -90,7 +91,7 @@ impl PluginHandler for StressPlugin {
             .capability(Capability::Network(vec!["connect".to_string()]));
 
         spinner.finish();
-        host_ui::success("Stress Test: Resolution complete!");
+        host::success("Stress Test: Resolution complete!");
 
         Ok((
             InstallPlan::new(builder.build()),
@@ -99,24 +100,24 @@ impl PluginHandler for StressPlugin {
     }
 
     async fn install(&self, plan: &InstallPlan, state: Option<String>) -> Result<()> {
-        host_ui::info("Stress Test: Running installation side-effects...");
+        host::info("Stress Test: Running installation side-effects...");
 
         if let Some(s) = state {
-            host_ui::info(format!("Restoring state: {}", s));
+            host::info(format!("Restoring state: {}", s));
         }
 
         // 1. Env Var Host Function
-        if let Some(architect_home) = host_ui::get_env("ARCHITECT_HOME") {
-            host_ui::info(format!("ARCHITECT_HOME is set: {}", architect_home));
+        if let Some(architect_home) = host::get_env("ARCHITECT_HOME") {
+            host::info(format!("ARCHITECT_HOME is set: {}", architect_home));
         }
 
         // 2. File System Host Function
-        match host_ui::read_file("env.json") {
-            Ok(_) => host_ui::success("Successfully read env.json via host."),
-            Err(e) => host_ui::error(format!("Failed to read env.json: {}", e)),
+        match host::read_file("env.json") {
+            Ok(_) => host::success("Successfully read env.json via host."),
+            Err(e) => host::error(format!("Failed to read env.json: {}", e)),
         }
 
-        host_ui::success(format!(
+        host::success(format!(
             "Installation of {} dependencies complete.",
             plan.manifest.dependencies.len()
         ));

@@ -9,6 +9,10 @@ members = [
     "examples/feature-stress-plugin",
     "packages/manifest",
     "packages/server/database",
+    "packages/plugins/standard",
+    "packages/plugins/doctor",
+    "packages/plugins/node",
+    "packages/plugins/python",
 ]
 
 [workspace.package]
