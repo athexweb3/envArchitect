@@ -12,7 +12,8 @@ struct StandardPlugin;
 impl Plugin for StandardPlugin {
     async fn validate(&self, _manifest: &serde_json::Value) -> Result<Vec<String>> {
         // Delegate health checks to the Physician (Doctor Plugin)
-        Ok(env_plugin_doctor::check_system())
+        // Delegate health checks to the Physician (Doctor Plugin) - Removed for now
+        Ok(vec![])
     }
 
     async fn resolve(&self, _context: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {

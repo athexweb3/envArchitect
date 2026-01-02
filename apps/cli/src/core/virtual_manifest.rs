@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use env_architect::domain::entities::manifest::{
     DependencySpec, EnhancedManifest, ProjectMetadata,
 };
