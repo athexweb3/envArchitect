@@ -8,6 +8,7 @@ members = [
     "packages/sdks/rust/macros",
     "examples/feature-stress-plugin",
     "packages/manifest",
+    "packages/server/database",
 ]
 
 [workspace.package]
@@ -21,7 +22,7 @@ license = "MIT"
 
 [workspace.dependencies]
 env-architect = { path = "packages/env-architect" }
-database = { path = "packages/database" }
+database = { path = "packages/server/database" }
 # Internal crate links for the facade to work
 domain = { path = "packages/env-architect/crates/domain" }
 infrastructure = { path = "packages/env-architect/crates/infrastructure" }
