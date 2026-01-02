@@ -1,4 +1,3 @@
-use crate::ui::Theme;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -34,9 +33,9 @@ impl CliError {
     }
 
     pub fn render(&self) {
-        eprintln!("\n{} {}", Theme::error("Error:"), self);
+        eprintln!("\n{} {}", console::style("Error:").red().bold(), self);
         if let Some(s) = self.suggestion() {
-            eprintln!("{} {}", Theme::muted("  help:"), s);
+            eprintln!("{} {}", console::style("  help:").dim(), s);
         }
     }
 }
