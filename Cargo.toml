@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
     "apps/cli",
-    "apps/notary-worker",
-    "apps/registry-api",
+    "packages/server/worker",
+    "packages/server/api",
     "packages/sdks/rust/sdk",
     "packages/sdks/rust/macros",
     "examples/feature-stress-plugin",
