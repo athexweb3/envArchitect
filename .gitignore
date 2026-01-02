@@ -52,7 +52,9 @@ temp
 
 # Rust
 target/
-**/target/
-
-# Cargo
+**/target
+**/*.rs.bk
 Cargo.lock
+
+# Allow agent rules
+!.agent/
