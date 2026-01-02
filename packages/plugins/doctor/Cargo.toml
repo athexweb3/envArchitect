@@ -1,0 +1,23 @@
+[package]
+name = "env-plugin-doctor"
+version = "0.1.0"
+edition = "2021"
+authors = ["athexweb3 <athexweb3@gmail.com>"]
+description = "The Physician: Advanced System Diagnostic & remediation plugin."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# SDK
+env-architect-sdk = { path = "../../sdks/rust/sdk" }
+wit-bindgen = "0.21.0"
+
+# Logic
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+async-trait = "0.1"
+
+[package.metadata.plugin]
+capabilities = ["fs-read", "sys-exec", "ui-interact"]
