@@ -47,7 +47,7 @@ impl ResolveCommand {
             return Ok(());
         }
 
-        let spinner = cliclack::spinner();
+        let mut spinner = cliclack::spinner();
         spinner.start("Initializing plugin engine...");
 
         // 1. Configure Wasmtime
