@@ -14,6 +14,11 @@ interface host {
     /// File System & Env (Virtualized)
     get-env: func(key: string) -> option<string>;
     read-file: func(path: string) -> result<string, string>;
+    write-file: func(path: string, content: string) -> result<_, string>;
+    create-dir: func(path: string) -> result<_, string>;
+    
+    /// System Execution
+    exec: func(command: string, args: list<string>) -> result<string, string>;
 
     enum log-level {
         debug,

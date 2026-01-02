@@ -161,6 +161,8 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
                          Capability::UiInteract => "ui-interact".to_string(),
                          Capability::UiSecret => "ui-secret".to_string(),
                          Capability::ServiceControl(_) => "service-control".to_string(),
+                         Capability::SysExec(_) => "sys-exec".to_string(),
+                         Capability::EnvRead(_) => "env-read".to_string(),
                      }
                  }).collect();
                  env_architect_sdk::api::context::set_active_capabilities(active_caps_strings);

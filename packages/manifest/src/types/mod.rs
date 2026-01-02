@@ -1,5 +1,6 @@
 pub mod config;
 pub mod dependencies;
+pub mod global;
 pub mod intelligence;
 pub mod metadata;
 pub mod platform;

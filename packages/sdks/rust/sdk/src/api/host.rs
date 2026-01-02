@@ -66,6 +66,45 @@ pub fn read_file(path: impl Into<String>) -> Result<String, String> {
     })
 }
 
+/// Write a file to the virtualized filesystem.
+pub fn write_file(path: impl Into<String>, content: impl Into<String>) -> Result<(), String> {
+    let p = path.into();
+    let c = content.into();
+    ACTIVE_MOCK.with(|m| {
+        if let Some(_mock) = m.borrow().as_ref() {
+            // Mock support for write_file would go here in future
+            Err("Mock doesn't support write_file yet".to_string())
+        } else {
+            host::write_file(&p, &c)
+        }
+    })
+}
+
+/// Create a directory in the virtualized filesystem.
+pub fn create_dir(path: impl Into<String>) -> Result<(), String> {
+    let p = path.into();
+    ACTIVE_MOCK.with(|m| {
+        if let Some(_mock) = m.borrow().as_ref() {
+            Err("Mock doesn't support create_dir yet".to_string())
+        } else {
+            host::create_dir(&p)
+        }
+    })
+}
+
+/// Execute a command on the host system.
+pub fn exec(command: impl Into<String>, args: &[&str]) -> Result<String, String> {
+    let c = command.into();
+    let a: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+    ACTIVE_MOCK.with(|m| {
+        if let Some(_mock) = m.borrow().as_ref() {
+            Err("Mock doesn't support exec yet".to_string())
+        } else {
+            host::exec(&c, &a)
+        }
+    })
+}
+
 // UI Re-exports or wrappers
 pub fn success(message: impl Into<String>) {
     if !crate::api::context::check_capability("ui-interact") {
