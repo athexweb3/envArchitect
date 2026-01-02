@@ -50,7 +50,7 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread")]
     async fn test_plugin_resolution() -> Result<()> {
         let plugin = MyPlugin::default();
         let runner = TestRunner::new(plugin);
