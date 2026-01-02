@@ -43,4 +43,8 @@ serde_yaml = "0.9.34"
 toml = "0.8"
 notify = "6.1"
 cliclack = "0.3.7"
+semver = "1.0"
+dirs = "5.0"
+chrono = { version = "0.4", features = ["serde"] }
 domain = { path = "../../packages/env-architect/crates/domain" }
+regex = "1.12.2"

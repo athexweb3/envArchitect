@@ -44,32 +44,20 @@ impl InstallService {
 
     /// Install from a full environment manifest
     pub async fn install_from_manifest(&mut self, manifest: EnhancedManifest) -> Result<()> {
-        let project_name = &manifest.project.name;
-        println!(
-            "🧠 Resolving environment for project: '{}'...",
-            project_name
-        );
-
-        // 1. Extract root dependencies
-        // In a real solver, we would feed these as constraints to PubGrub.
-
         // 2. Populate Registry (Mock) & Resolve
         let mut resolved = Vec::new();
 
         for (name, _spec) in &manifest.dependencies {
-            // Ensure data exists
             self.populate_registry_mock(name)?;
-
-            // Resolve tree
             let sub_resolved = self.simple_resolve(name)?;
             resolved.extend(sub_resolved);
         }
 
         // De-duplicate packages
         resolved.sort_by(|a, b| a.name.cmp(&b.name));
-        resolved.dedup_by(|a, b| a.name == b.name); // Keep first
+        resolved.dedup_by(|a, b| a.name == b.name);
 
-        println!("✅ Resolved {} unique packages", resolved.len());
+        // println!("✅ Resolved {} unique packages", resolved.len());
 
         // 3. Build Execution DAG
         let mut dag = ExecutionDag::new();
@@ -82,26 +70,14 @@ impl InstallService {
 
         let batches = dag.resolve_batched().context("Dependency cycle detected")?;
 
-        println!(
-            "📦 Install plan: {} batches (parallel where possible)",
-            batches.len()
-        );
-
         // 4. Download + Verify + Execute each batch
-        for (batch_idx, batch) in batches.iter().enumerate() {
-            println!(
-                "\n🔄 Batch {}/{}: {:?}",
-                batch_idx + 1,
-                batches.len(),
-                batch
-            );
-
+        for (_batch_idx, batch) in batches.iter().enumerate() {
             for plugin_name in batch {
                 self.install_single(plugin_name).await?;
             }
         }
 
-        println!("\n✨ Environment aligned!");
+        // println!("\n✨ Environment aligned!");
         Ok(())
     }
 
@@ -113,7 +89,7 @@ impl InstallService {
     /// 4. Kalman Filter to show intelligent progress
     /// 5. Wasm Runtime to safely execute plugin hooks
     pub async fn install(&mut self, plugin_name: &str) -> Result<()> {
-        println!("🧠 Resolving dependencies for '{}'...", plugin_name);
+        println!("Resolving dependencies for '{}'...", plugin_name);
 
         // Step 1: Fetch available versions from registry (mock for now)
         // In production, this would query the registry API
@@ -139,20 +115,8 @@ impl InstallService {
 
         let batches = dag.resolve_batched().context("Dependency cycle detected")?;
 
-        println!(
-            "📦 Install plan: {} batches (parallel where possible)",
-            batches.len()
-        );
-
         // Step 4: Download + Verify + Execute each batch
-        for (batch_idx, batch) in batches.iter().enumerate() {
-            println!(
-                "\n🔄 Batch {}/{}: {:?}",
-                batch_idx + 1,
-                batches.len(),
-                batch
-            );
-
+        for (_batch_idx, batch) in batches.iter().enumerate() {
             for plugin_name in batch {
                 self.install_single(plugin_name).await?;
             }
@@ -170,7 +134,7 @@ impl InstallService {
         let pb = ProgressBar::new_spinner();
         pb.set_style(
             ProgressStyle::default_spinner()
-                .template("{spinner:.green} [{elapsed_precise}] {msg}")
+                .template("{spinner:.green} {msg}")
                 .unwrap(),
         );
         pb.set_message(format!("Downloading {}...", plugin_name));
@@ -183,7 +147,7 @@ impl InstallService {
         let plugin_path = match plugin_path_result {
             Ok(path) => path,
             Err(_) => {
-                pb.set_message("⚠️  Registry unreachable. Simulation mode: Mocking download.");
+                // pb.set_message("⚠️  Registry unreachable. Simulation mode: Mocking download.");
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await; // Make it feel real
                                                                                  // Return a dummy path (doesn't matter if we skip execution below)
                 PathBuf::from("/tmp/mock-plugin.wasm")
@@ -202,20 +166,20 @@ impl InstallService {
             vec![]
         };
 
-        pb.set_message(format!("Executing {}...", plugin_name));
+        pb.set_message(format!("Installing {}...", plugin_name));
 
         if !wasm_bytes.is_empty() {
             // Execute in sandboxed Wasm runtime
             self.wasm_runtime
                 .run(&wasm_bytes, vec![])
-                .unwrap_or_else(|e| {
-                    pb.println(format!("  Note: {} (library-only plugin)", e));
+                .unwrap_or_else(|_e| {
+                    // pb.println(format!("  Note: {} (library-only plugin)", e));
                 });
         } else {
-            pb.println(format!("  ℹ️  Simulated install for {}", plugin_name));
+            // pb.println(format!("      [Simulated] {}", plugin_name));
         }
 
-        pb.finish_with_message(format!("✓ Installed {}", plugin_name));
+        pb.finish_and_clear();
         Ok(())
     }
 
