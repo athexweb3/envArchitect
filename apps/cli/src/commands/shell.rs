@@ -42,7 +42,7 @@ impl ShellCommand {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "zsh".to_string());
 
         // Update PATH: Prepend shims directory
-        let mut path_env = std::env::var("PATH").unwrap_or_default();
+        let path_env = std::env::var("PATH").unwrap_or_default();
         let new_path = format!("{}:{}", shims_dir.to_string_lossy(), path_env);
 
         cliclack::log::success(format!("Spawning {} with Architect context...", shell))?;

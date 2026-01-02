@@ -12,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Connect to shared database
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let db = Database::connect(&database_url).await?;
+    let _db = Database::connect(&database_url).await?;
 
     tracing::info!("Connected to database. Waiting for jobs...");
 

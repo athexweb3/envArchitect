@@ -227,8 +227,8 @@ impl InstalledToolsRegistry {
                 }
 
                 // Try partial version (e.g., "1.2" -> "1.2.0")
-                if let Some((major, rest)) = clean.split_once('.') {
-                    if let Some((minor, _)) = rest.split_once('.') {
+                if let Some((_major, rest)) = clean.split_once('.') {
+                    if let Some((_minor, _)) = rest.split_once('.') {
                         // Already has major.minor.patch
                         if let Ok(version) = Version::parse(clean) {
                             return Ok(version);

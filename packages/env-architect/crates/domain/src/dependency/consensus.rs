@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Represents a pinned environment state for collaborative consensus
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

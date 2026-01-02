@@ -10,8 +10,8 @@ pub struct HostState {
     pub allowed_capabilities: Vec<String>,
 
     // Meta-information for rich diagnostics
-    pub manifest_path: Option<String>,
-    pub manifest_content: Option<String>,
+    pub _manifest_path: Option<String>,
+    pub _manifest_content: Option<String>,
 }
 
 impl HostState {
@@ -26,8 +26,8 @@ impl HostState {
             ctx,
             table: ResourceTable::new(),
             allowed_capabilities,
-            manifest_path,
-            manifest_content,
+            _manifest_path: manifest_path,
+            _manifest_content: manifest_content,
         }
     }
 }

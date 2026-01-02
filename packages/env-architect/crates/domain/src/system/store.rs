@@ -98,7 +98,6 @@ impl StoreManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
 
     #[test]
     fn test_store_path_calculation() {

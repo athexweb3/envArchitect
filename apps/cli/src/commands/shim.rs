@@ -19,7 +19,7 @@ pub async fn execute_shim(tool_name: String, args: Vec<String>) -> Result<()> {
     // 3. Find the version required for this tool
     // We'll use a hack for the prototype: search the manifest for the tool name
     let manifest: serde_json::Value = serde_json::from_str(&content)?;
-    let version_req = manifest
+    let _version_req = manifest
         .get("dependencies")
         .and_then(|d| d.get(&tool_name))
         .and_then(|v| v.as_str())
