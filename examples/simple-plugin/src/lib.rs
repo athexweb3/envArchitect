@@ -9,10 +9,11 @@ struct MyPlugin;
 impl PluginHandler for MyPlugin {
     async fn validate(&self, manifest: &serde_json::Value) -> Result<Vec<String>> {
         host_ui::info("Validating manifest...");
+        let mut errors = Vec::new();
         if manifest.get("project").is_none() {
-            return Ok(vec!["Missing [project] section!".to_string()]);
+            errors.push("Missing [project] section!".to_string());
         }
-        Ok(vec![])
+        Ok(errors)
     }
 
     async fn resolve(&self, context: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
