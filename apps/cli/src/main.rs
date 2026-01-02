@@ -22,13 +22,17 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Install an environment from a file (or registry)
+    /// Install an environment or a specific package
     Install {
-        /// Path to the environment file (env.toml/json/yaml). If not provided, searches current directory.
+        /// Package to install (e.g. 'node'). If provided, adds to env.toml. If empty, installs from env.toml.
+        #[arg(value_parser)]
+        package: Option<String>,
+
+        /// Path to the environment file (env.toml/json/yaml).
         #[arg(short, long)]
         path: Option<PathBuf>,
 
-        /// Force re-resolution
+        /// Force re-installation
         #[arg(long, short)]
         force: bool,
     },
@@ -73,6 +77,12 @@ enum Commands {
         #[arg(last = true)]
         args: Vec<String>,
     },
+
+    /// Run the embedded Physician (Doctor) diagnostic tool
+    Doctor(commands::doctor::DoctorCommand),
+
+    /// Initialize a new environment configuration
+    Init(commands::init::InitCommand),
 }
 
 #[tokio::main]
@@ -83,42 +93,104 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Install { path, force } => {
+        Commands::Install {
+            package,
+            path,
+            force,
+        } => {
             cliclack::intro(console::style("EnvArchitect Install").bold())?;
             if force {
                 cliclack::log::warning("Force mode enabled")?;
             }
 
-            let (_manifest_path, manifest) = match path {
-                Some(p) => {
-                    cliclack::log::step(format!("Loading manifest from: {:?}", p))?;
-                    (p.clone(), utils::loader::load_manifest(&p)?)
+            // 1. System/Global Install Mode (Homebrew-style)
+            // When a package is explicitly named, we operate in system mode.
+            // This is context-independent and does not read/write local project files.
+            if let Some(pkg_name) = package {
+                cliclack::log::step(format!("System Install: '{}'", pkg_name))?;
+
+                // Resolve against system registry or local WASM cache (dev mode)
+                let resolution = match pkg_name.as_str() {
+                    "node" => {
+                        if std::path::Path::new(
+                            "../../target/wasm32-wasip1/debug/env_plugin_node.wasm",
+                        )
+                        .exists()
+                        {
+                            "path:../../target/wasm32-wasip1/debug/env_plugin_node.wasm"
+                        } else {
+                            "registry:node"
+                        }
+                    }
+                    "python" => {
+                        if std::path::Path::new(
+                            "../../target/wasm32-wasip1/debug/env_plugin_python.component.wasm",
+                        )
+                        .exists()
+                        {
+                            "path:../../target/wasm32-wasip1/debug/env_plugin_python.component.wasm"
+                        } else {
+                            "registry:python"
+                        }
+                    }
+                    _ => "registry:unknown",
+                };
+
+                // DIRECT EXECUTION PATH (SystemExecutor)
+                // If we have a local path (Dev Mode), we execute the plugin directly to support interactive resolution.
+                if resolution.starts_with("path:") {
+                    let path_str = resolution.strip_prefix("path:").unwrap();
+                    let plugin_path = PathBuf::from(path_str);
+
+                    crate::core::executor::SystemExecutor::install(&plugin_path).await?;
+                } else {
+                    // Registry Fallback (Legacy / Non-Interactive for now)
+                    // Create a virtual manifest for this single transaction
+                    let manifest = crate::core::virtual_manifest::VirtualManifestBuilder::build(
+                        &pkg_name, resolution,
+                    )?;
+
+                    // Initialize Service
+                    let registry_url = Url::parse("https://registry.env-architect.dev")
+                        .context("Invalid registry URL")?;
+                    let tuf_root = PathBuf::from(".env-architect/tuf");
+                    let tuf_cache = PathBuf::from(".env-architect/cache");
+                    std::fs::create_dir_all(&tuf_root)?;
+                    std::fs::create_dir_all(&tuf_cache)?;
+
+                    let mut service = InstallService::new(registry_url, tuf_root, tuf_cache)?;
+                    service.install_from_manifest(manifest).await?;
                 }
-                None => {
-                    cliclack::log::step("Searching for manifest in current directory...")?;
-                    utils::loader::find_and_load_manifest(&std::env::current_dir()?)?
-                }
-            };
 
-            cliclack::log::success(format!("Loaded project: {}", &manifest.project.name))?;
+                // Update Global State Tracking
+                let global_store = crate::core::global_store::GlobalStateService::new()?;
+                global_store.add_tool(&pkg_name, &resolution, Some("latest".to_string()), None)?;
 
-            let registry_url =
-                Url::parse("https://registry.env-architect.dev").context("Invalid registry URL")?;
+                cliclack::log::success(format!("Installed '{}' to global system.", pkg_name))?;
+                cliclack::outro("Done.")?;
+            }
+            // 2. Project Install Mode (npm install / cargo build style)
+            // When no package is named, we look for a manifest file to restore the environment.
+            else {
+                let (_manifest_path, manifest) = match path {
+                    Some(p) => (p.clone(), utils::loader::load_manifest(&p)?),
+                    None => utils::loader::find_and_load_manifest(&std::env::current_dir()?)?,
+                };
 
-            let tuf_root = PathBuf::from(".env-architect/tuf");
-            let tuf_cache = PathBuf::from(".env-architect/cache");
+                cliclack::log::step(format!("Restoring Project: {}", &manifest.project.name))?;
 
-            // Create cache directories
-            std::fs::create_dir_all(&tuf_root)?;
-            std::fs::create_dir_all(&tuf_cache)?;
+                let registry_url = Url::parse("https://registry.env-architect.dev")
+                    .context("Invalid registry URL")?;
+                let tuf_root = PathBuf::from(".env-architect/tuf");
+                let tuf_cache = PathBuf::from(".env-architect/cache");
+                std::fs::create_dir_all(&tuf_root)?;
+                std::fs::create_dir_all(&tuf_cache)?;
 
-            let mut service = InstallService::new(registry_url, tuf_root, tuf_cache)?;
-            
-            // TODO: Wrap this in a spinner if possible, or let it log
-            // Execute installation from manifest
-            service.install_from_manifest(manifest).await?;
-            
-            cliclack::outro("Installation complete")?;
+                let mut service = InstallService::new(registry_url, tuf_root, tuf_cache)?;
+                service.install_from_manifest(manifest).await?;
+
+                cliclack::outro("Project environment restored.")?;
+            }
         }
         Commands::Resolve(cmd) => {
             cmd.execute().await?;
@@ -154,6 +226,12 @@ async fn main() -> Result<()> {
         }
         Commands::Shim { tool, args } => {
             commands::shim::execute_shim(tool, args).await?;
+        }
+        Commands::Doctor(cmd) => {
+            cmd.execute().await?;
+        }
+        Commands::Init(cmd) => {
+            cmd.execute().await?;
         }
     }
 

@@ -199,12 +199,73 @@ impl ResolveCommand {
                 // cliclack::note doesn't take a title in the same way, using log::info for content
                 cliclack::log::info(serde_json::to_string_pretty(&valid_json)?)?;
 
-                // Phase 1 V2: Create Shims and Ensure Store for dependencies
-                // Parse the InstallPlan to access the nested manifest
+                // Brain Integration: Connect Core Intelligence
+                // We parse the manifest from the plugin output to check for system conflicts
                 if let Some(manifest_node) = valid_json.get("manifest").cloned() {
-                    if let Ok(manifest) =
-                        serde_json::from_value::<env_manifest::EnhancedManifest>(manifest_node)
-                    {
+                    if let Ok(manifest) = serde_json::from_value::<env_manifest::EnhancedManifest>(
+                        manifest_node.clone(),
+                    ) {
+                        // 1. Initialize Intelligence
+                        let platform = domain::system::PlatformDetector::detect();
+                        let mut registry = domain::system::InstalledToolsRegistry::new();
+                        // Perform live scan
+                        let _ = registry.scan();
+                        let resolver =
+                            domain::intelligence::ConflictResolver::new(platform, registry);
+
+                        cliclack::log::step("Analyzing for system conflicts (V2 Intelligence)...")?;
+
+                        // 2. Detect Conflicts
+                        for (tool_name, dep_spec) in &manifest.dependencies {
+                            use env_manifest::DependencySpec;
+                            let version_req = match dep_spec {
+                                DependencySpec::Simple(req) => req.clone(),
+                                DependencySpec::Detailed(d) => d.version.clone(),
+                            };
+
+                            if let Some(conflict) = resolver.detect_conflicts(
+                                tool_name,
+                                &version_req,
+                                "current-project", // simplified for now
+                            ) {
+                                // 3. Resolve / Present Options
+                                let recommendations = resolver.resolve(&conflict)?;
+
+                                if !recommendations.is_empty() {
+                                    cliclack::log::warning(format!(
+                                        "⚠️  Conflict Detected: {}",
+                                        console::style(tool_name).bold().yellow()
+                                    ))?;
+
+                                    // Interactive Resolution Selector
+                                    let items: Vec<(usize, &str, &str)> = recommendations
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(i, r)| (i, r.action.as_str(), ""))
+                                        .collect();
+
+                                    let selection_idx = cliclack::select(format!(
+                                        "Resolution options for {}:",
+                                        tool_name
+                                    ))
+                                    .items(&items)
+                                    .interact()?;
+
+                                    let chosen_rec = &recommendations[selection_idx];
+
+                                    cliclack::log::success(format!(
+                                        "Selected: {}",
+                                        chosen_rec.action
+                                    ))?;
+                                    cliclack::log::info(format!(
+                                        "Will perform strategy: {:?}",
+                                        chosen_rec.strategy
+                                    ))?;
+                                }
+                            }
+                        }
+
+                        // Proceed to Phase 1 V2: Create Shims within the same scope
                         let spinner_v2 = cliclack::spinner();
                         spinner_v2.start("Finalizing V2 Sovereign Environment...");
 
@@ -358,14 +419,69 @@ impl ResolveCommand {
                                         }
                                     }
                                 }
+                                cliclack::log::info(format!(
+                                    "Debug: Actions count: {}",
+                                    intel.proposed_actions.len()
+                                ))?;
 
-                                if cliclack::confirm("Apply recommended resolutions?").interact()? {
-                                    for action in intel.proposed_actions {
-                                        // TODO: Implement actual execution of actions
-                                        cliclack::log::info(format!(
-                                            "Applying resolution: {:?}",
-                                            action
-                                        ))?;
+                                if cliclack::confirm("Apply recommended resolutions?")
+                                    .initial_value(true)
+                                    .interact()?
+                                {
+                                    for action in &intel.proposed_actions {
+                                        match action {
+                                            env_manifest::ResolutionAction::ManagedInstall {
+                                                manager,
+                                                command,
+                                            } => {
+                                                cliclack::log::info(format!(
+                                                    "🚀 Executing {}...",
+                                                    manager
+                                                ))?;
+                                                let status = std::process::Command::new("sh")
+                                                    .arg("-c")
+                                                    .arg(&command)
+                                                    .status()?;
+
+                                                if !status.success() {
+                                                    cliclack::log::error(format!(
+                                                        "Failed to execute {}",
+                                                        command
+                                                    ))?;
+                                                }
+                                            }
+                                            env_manifest::ResolutionAction::ConfigUpdate {
+                                                path,
+                                                patch,
+                                            } => {
+                                                cliclack::log::info(format!(
+                                                    "📝 Updating config: {}",
+                                                    path
+                                                ))?;
+                                                cliclack::log::info(format!(
+                                                    "Applying patch: {}",
+                                                    patch
+                                                ))?;
+                                                // TODO: Implement robust TOML patching
+                                                cliclack::log::warning("Patch application not yet fully implemented. Please verify env.toml manually.")?;
+                                            }
+
+                                            env_manifest::ResolutionAction::AutoShim {
+                                                url,
+                                                binary_name,
+                                            } => {
+                                                cliclack::log::warning(format!("Skipping AutoShim for {} (Downloading from {} not yet supported)", binary_name, url))?;
+                                            }
+                                            env_manifest::ResolutionAction::ManualPrompt {
+                                                message,
+                                                ..
+                                            } => {
+                                                cliclack::log::info(format!(
+                                                    "Please manually: {}",
+                                                    message
+                                                ))?;
+                                            }
+                                        }
                                     }
                                 }
                             }

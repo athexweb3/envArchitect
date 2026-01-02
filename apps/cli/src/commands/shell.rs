@@ -25,10 +25,10 @@ impl ShellCommand {
             .unwrap_or("Project");
 
         cliclack::intro(console::style("Architect Shell").on_cyan().black())?;
-        
+
         cliclack::log::info(format!(
-             "Activating Environment: {}", 
-             console::style(project_name).bold().cyan()
+            "Activating Environment: {}",
+            console::style(project_name).bold().cyan()
         ))?;
 
         // 1. Discover required shims from env.json/toml

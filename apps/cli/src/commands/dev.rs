@@ -126,20 +126,39 @@ impl DevCommand {
             // In a workspace, target is usually at the root.
             // Let's try multiple places:
             let possible_paths = [
+                // 1. Standard local target
                 PathBuf::from("target/wasm32-wasip1/debug").join(&wasm_filename),
                 PathBuf::from("target/wasm32-wasi/debug").join(&wasm_filename),
+                // 2. Relative to plugin path (if it's a standalone crate)
                 self.path
                     .join("target/wasm32-wasip1/debug")
                     .join(&wasm_filename),
                 self.path
                     .join("target/wasm32-wasi/debug")
                     .join(&wasm_filename),
+                // 3. Workspace root (likely case for monorepo)
+                // Assuming we are 2 levels deep in examples/demo, or plugin is 3 levels deep in packages/plugins/python
+                // We try a few hops up from the plugin path
+                self.path
+                    .join("../../target/wasm32-wasip1/debug")
+                    .join(&wasm_filename),
+                self.path
+                    .join("../../target/wasm32-wasi/debug")
+                    .join(&wasm_filename),
+                self.path
+                    .join("../../../target/wasm32-wasip1/debug")
+                    .join(&wasm_filename),
+                self.path
+                    .join("../../../target/wasm32-wasi/debug")
+                    .join(&wasm_filename),
+                // 4. Default fallback
                 self.wasm.clone(),
             ];
 
             for path in &possible_paths {
                 if path.exists() {
                     wasm_path = path.clone();
+                    cliclack::log::info(format!("Found Wasm binary at: {:?}", path))?;
                     break;
                 }
             }
@@ -196,12 +215,25 @@ impl DevCommand {
             }
 
             // Step 2: Embed WIT
+            // Robustly find workspace root to locate WIT
             let mut wit_path = PathBuf::from("packages/sdks/wit/plugin.wit");
-            if !wit_path.exists() {
-                wit_path = self.path.join("../../packages/sdks/wit/plugin.wit");
-            }
-            if !wit_path.exists() {
-                wit_path = PathBuf::from("../packages/sdks/wit/plugin.wit");
+
+            // Try explicit lookup based on common depth patterns
+            let candidates = [
+                PathBuf::from("packages/sdks/wit/plugin.wit"),
+                PathBuf::from("../packages/sdks/wit/plugin.wit"),
+                PathBuf::from("../../packages/sdks/wit/plugin.wit"),
+                PathBuf::from("../../../packages/sdks/wit/plugin.wit"),
+                // Try resolving relative to the plugin path itself
+                self.path.join("../../sdks/wit/plugin.wit"),
+                self.path.join("../../../sdks/wit/plugin.wit"),
+            ];
+
+            for p in &candidates {
+                if p.exists() {
+                    wit_path = p.clone();
+                    break;
+                }
             }
 
             spinner.start("Embedding WIT interface...");

@@ -20,7 +20,11 @@ impl HostState {
         manifest_path: Option<String>,
         manifest_content: Option<String>,
     ) -> Self {
-        let ctx = WasiCtxBuilder::new().inherit_stdio().inherit_args().build();
+        let ctx = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .inherit_args()
+            .inherit_env() // Allow plugin to see PATH and other env vars
+            .build();
 
         Self {
             ctx,
