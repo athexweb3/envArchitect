@@ -158,7 +158,7 @@ impl DevCommand {
         cliclack::log::info(format!("Component output path: {:?}", component_path))?;
 
         if self.path.join("Cargo.toml").exists() {
-            let spinner = cliclack::spinner();
+            let mut spinner = cliclack::spinner();
             spinner.start("Checking adapters...");
 
             // Step 0: Ensure WASI Adapter exists
