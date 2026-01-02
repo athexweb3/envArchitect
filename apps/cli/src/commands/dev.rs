@@ -70,7 +70,7 @@ impl DevCommand {
     async fn run_iteration(&self) -> Result<()> {
         // 1. Rebuild if it's a Rust project (simple check)
         if self.path.join("Cargo.toml").exists() {
-            let spinner = cliclack::spinner();
+            let mut spinner = cliclack::spinner();
             spinner.start("Detecting project type...");
 
             spinner.start("Building Wasm binary (Rust)...");
