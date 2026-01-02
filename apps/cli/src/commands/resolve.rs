@@ -206,7 +206,7 @@ impl ResolveCommand {
                     if let Ok(manifest) =
                         serde_json::from_value::<env_manifest::EnhancedManifest>(manifest_node)
                     {
-                        let spinner_v2 = cliclack::spinner();
+                        let mut spinner_v2 = cliclack::spinner();
                         spinner_v2.start("Finalizing V2 Sovereign Environment...");
 
                         let store = StoreManager::default()?;
