@@ -57,7 +57,7 @@ impl Host for HostState {
             for opt in &options {
                 selection = selection.item(opt, opt, "");
             }
-            selection.interact().unwrap_or_default().to_string()
+            selection.interact().map(|s| s.to_string()).unwrap_or_default()
         })
         .await
         .unwrap_or_default()

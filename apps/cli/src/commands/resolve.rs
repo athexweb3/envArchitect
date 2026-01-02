@@ -193,7 +193,7 @@ impl ResolveCommand {
                 spinner.stop("Resolution complete.");
 
                 let valid_json: serde_json::Value = serde_json::from_str(&output.plan_json)
-                    .unwrap_or(serde_json::Value::String(output.plan_json));
+                    .unwrap_or_else(|_| serde_json::Value::String(output.plan_json));
 
                 cliclack::log::info("Install Plan:")?;
                 // cliclack::note doesn't take a title in the same way, using log::info for content
@@ -201,10 +201,7 @@ impl ResolveCommand {
 
                 // Phase 1 V2: Create Shims and Ensure Store for dependencies
                 // Parse the InstallPlan to access the nested manifest
-                if let Some(manifest_node) =
-                    serde_json::from_str::<serde_json::Value>(&output.plan_json)
-                        .ok()
-                        .and_then(|v| v.get("manifest").cloned())
+                if let Some(manifest_node) = valid_json.get("manifest").cloned()
                 {
                     if let Ok(manifest) =
                         serde_json::from_value::<env_manifest::EnhancedManifest>(manifest_node)
