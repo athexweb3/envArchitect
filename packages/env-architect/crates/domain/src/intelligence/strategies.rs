@@ -1,4 +1,4 @@
-use env_manifest::{ResolutionAction, ServiceDef};
+use env_manifest::ResolutionAction;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::fmt;

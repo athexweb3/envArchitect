@@ -9,11 +9,10 @@ struct MyPlugin;
 impl PluginHandler for MyPlugin {
     async fn validate(&self, manifest: &serde_json::Value) -> Result<Vec<String>> {
         host_ui::info("Validating manifest...");
-        let mut errors = Vec::new();
         if manifest.get("project").is_none() {
-            errors.push("Missing [project] section!".to_string());
+            return Ok(vec!["Missing [project] section!".to_string()]);
         }
-        Ok(errors)
+        Ok(vec![])
     }
 
     async fn resolve(&self, context: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
@@ -50,7 +49,7 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
     async fn test_plugin_resolution() -> Result<()> {
         let plugin = MyPlugin::default();
         let runner = TestRunner::new(plugin);

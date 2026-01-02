@@ -1,5 +1,5 @@
 use crate::system::{OsType, PlatformInfo};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -12,17 +12,17 @@ pub struct MetricsDetector {
 
 #[derive(Debug, Deserialize)]
 struct HomebrewBottle {
-    stable: Option<HomebrewBottleStable>,
+    _stable: Option<HomebrewBottleStable>,
 }
 
 #[derive(Debug, Deserialize)]
 struct HomebrewBottleStable {
-    files: serde_json::Value,
+    _files: serde_json::Value,
 }
 
 #[derive(Debug, Deserialize)]
 struct HomebrewInfo {
-    bottle: Option<HomebrewBottle>,
+    _bottle: Option<HomebrewBottle>,
 }
 
 impl MetricsDetector {
@@ -92,7 +92,7 @@ impl MetricsDetector {
             "react" => 500,         // ~500KB
             "vue" => 3_000,         // ~3MB
             "express" => 200,       // ~200KB
-            _ => return anyhow::bail!("Unknown npm package"),
+            _ => anyhow::bail!("Unknown npm package"),
         };
 
         Ok(size_kb / 1024) // Convert to MB
@@ -111,7 +111,7 @@ impl MetricsDetector {
             "pandas" => 40_000,      // ~40MB
             "tensorflow" => 450_000, // ~450MB
             "pytorch" => 800_000,    // ~800MB
-            _ => return anyhow::bail!("Unknown PyPI package"),
+            _ => anyhow::bail!("Unknown PyPI package"),
         };
 
         Ok(size_kb / 1024) // Convert to MB
@@ -128,7 +128,7 @@ impl MetricsDetector {
             "actix-web" => 2_000, // ~2MB
             "rocket" => 1_500,    // ~1.5MB
             "diesel" => 5_000,    // ~5MB
-            _ => return anyhow::bail!("Unknown crate"),
+            _ => anyhow::bail!("Unknown crate"),
         };
 
         Ok(size_kb / 1024) // Convert to MB
@@ -145,7 +145,7 @@ impl MetricsDetector {
             if out.status.success() {
                 let json_str = String::from_utf8_lossy(&out.stdout);
                 if let Ok(infos) = serde_json::from_str::<Vec<HomebrewInfo>>(&json_str) {
-                    if let Some(info) = infos.first() {
+                    if let Some(_info) = infos.first() {
                         // For now, use formula-based estimation
                         // In production, would parse bottle URL and query size
                         return Ok(self.fallback_estimate(tool));

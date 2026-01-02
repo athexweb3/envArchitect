@@ -28,12 +28,6 @@ pub struct ResolveCommand {
 
 impl ResolveCommand {
     pub async fn execute(self) -> Result<()> {
-        use crate::ui::{
-            self,
-            components::{prompt, spinner::Spinner},
-            Icon, Theme,
-        };
-
         let root = self
             .project_root
             .clone()
@@ -41,20 +35,20 @@ impl ResolveCommand {
 
         let absolute_root = std::fs::canonicalize(&root).unwrap_or(root);
 
-        // 1. Theme Header
-        println!(
-            "\n{} {} {}",
-            Icon::Architect,
-            Theme::primary("EnvArchitect"),
-            Theme::muted("v0.1.0")
-        );
+        // 1. Theme Header (Clack Style)
+        cliclack::intro(format!(
+            "{} {}",
+            console::style("EnvArchitect").bold(),
+            console::style("v0.1.0").dim()
+        ))?;
 
-        if !prompt::confirm("Start environment resolution?") {
-            println!("{} Operation cancelled.", Icon::Cross);
+        if !cliclack::confirm("Start environment resolution?").interact()? {
+            cliclack::log::error("Operation cancelled.")?;
             return Ok(());
         }
 
-        let spinner = Spinner::new("Initializing plugin engine...");
+        let mut spinner = cliclack::spinner();
+        spinner.start("Initializing plugin engine...");
 
         // 1. Configure Wasmtime
         let mut config = Config::new();
@@ -151,16 +145,15 @@ impl ResolveCommand {
         let mut store = Store::new(&engine, host_state);
 
         // 4. Load Component
-        spinner.set_task("Plugin Loading");
-        spinner.set_message("Reading Wasm binary...");
+        spinner.start("Reading Wasm binary...");
         let component_bytes = std::fs::read(&self.plugin)
             .with_context(|| format!("Failed to read plugin file: {:?}", self.plugin))?;
-        spinner.set_message("Instantiating component...");
+        spinner.start("Instantiating component...");
         let component = Component::new(&engine, component_bytes)?;
         let plugin = Plugin::instantiate_async(&mut store, &component, &linker).await?;
 
         // 6. Execute
-        spinner.set_message("Discovering system tools...");
+        spinner.start("Discovering system tools...");
         let mut registry = domain::system::InstalledToolsRegistry::new();
         let _ = registry.scan();
         let mut system_tools = std::collections::HashMap::new();
@@ -179,7 +172,7 @@ impl ResolveCommand {
             }
         }
 
-        spinner.set_message("Resolving dependencies...");
+        spinner.start("Resolving dependencies...");
         let context = serde_json::json!({
             "target_os": std::env::consts::OS,
             "target_arch": std::env::consts::ARCH,
@@ -197,25 +190,24 @@ impl ResolveCommand {
 
         match result {
             Ok(Ok(output)) => {
-                spinner.success("Resolution complete.");
+                spinner.stop("Resolution complete.");
 
                 let valid_json: serde_json::Value = serde_json::from_str(&output.plan_json)
-                    .unwrap_or(serde_json::Value::String(output.plan_json));
+                    .unwrap_or_else(|_| serde_json::Value::String(output.plan_json));
 
-                ui::info("Install Plan:");
-                let _ = ui::println(serde_json::to_string_pretty(&valid_json)?);
+                cliclack::log::info("Install Plan:")?;
+                // cliclack::note doesn't take a title in the same way, using log::info for content
+                cliclack::log::info(serde_json::to_string_pretty(&valid_json)?)?;
 
                 // Phase 1 V2: Create Shims and Ensure Store for dependencies
                 // Parse the InstallPlan to access the nested manifest
-                if let Some(manifest_node) =
-                    serde_json::from_str::<serde_json::Value>(&output.plan_json)
-                        .ok()
-                        .and_then(|v| v.get("manifest").cloned())
+                if let Some(manifest_node) = valid_json.get("manifest").cloned()
                 {
                     if let Ok(manifest) =
                         serde_json::from_value::<env_manifest::EnhancedManifest>(manifest_node)
                     {
-                        let spinner_v2 = Spinner::new("Finalizing V2 Sovereign Environment...");
+                        let mut spinner_v2 = cliclack::spinner();
+                        spinner_v2.start("Finalizing V2 Sovereign Environment...");
 
                         let store = StoreManager::default()?;
                         let verifier = VerificationService::new();
@@ -223,7 +215,7 @@ impl ResolveCommand {
                         std::fs::create_dir_all(&shims_dir)?;
 
                         for (name, spec) in &manifest.dependencies {
-                            spinner_v2.set_message(format!("Shimming {}...", name));
+                            spinner_v2.start(format!("Shimming {}...", name));
 
                             // 1. Ensure tool is in store (Prototype: Mock install if not exists)
                             let version_req = match spec {
@@ -240,7 +232,7 @@ impl ResolveCommand {
 
                             let hash = "abc123456789";
                             if !store.exists(name, &version, hash) {
-                                spinner_v2.set_message(format!(
+                                spinner_v2.start(format!(
                                     "Enforcing Binary Sovereignty (Sigstore) for {}...",
                                     name
                                 ));
@@ -258,10 +250,10 @@ impl ResolveCommand {
                                     .await?
                                 {
                                     spinner_v2
-                                        .set_message(format!("Downloading {} to Store...", name));
+                                        .start(format!("Downloading {} to Store...", name));
                                     let _ = store.ensure_dir(name, &version, hash)?;
                                 } else {
-                                    spinner_v2.fail(format!(
+                                    spinner_v2.error(format!(
                                         "Security Violation: Unverified binary for {}",
                                         name
                                     ));
@@ -285,7 +277,7 @@ impl ResolveCommand {
                                 std::fs::set_permissions(&shim_path, perms)?;
                             }
                         }
-                        spinner_v2.success("Sovereign environment ready.");
+                        spinner_v2.stop("Sovereign environment ready.");
 
                         // Phase 3 V2: Team Consensus & Drift Detection
                         let consensus =
@@ -294,27 +286,27 @@ impl ResolveCommand {
                         let drifts = ConsensusEngine::detect_drift(&consensus, &local_tools);
 
                         if !drifts.is_empty() {
-                            ui::warn("⚠️  Environment Drift Detected (Team vs Local):");
+                            cliclack::log::warning("⚠️  Environment Drift Detected (Team vs Local):")?;
                             for drift in drifts {
                                 let desc = drift.description();
-                                ui::println(format!("  {} {}", Icon::Info, Theme::muted(desc)));
+                                cliclack::log::info(format!("  {} {}", console::style("!").yellow(), desc))?;
                             }
 
-                            if prompt::confirm("Harmonize local environment with team consensus?") {
-                                ui::info("Harmonizing tools...");
+                            if cliclack::confirm("Harmonize local environment with team consensus?").interact()? {
+                                cliclack::log::info("Harmonizing tools...")?;
                                 // TODO: Execute harmonization logic
                             }
                         }
 
-                        ui::success(format!(
+                        cliclack::outro(format!(
                             "Project active. Use '{}' to enter environment.",
-                            Theme::bold("architect shell")
-                        ));
+                            console::style("architect shell").bold()
+                        ))?;
 
                         // Handle Intelligence Data (Proposed Actions)
                         if let Some(intel) = manifest.intelligence {
                             if !intel.proposed_actions.is_empty() {
-                                ui::warn("Environment conflicts detected. Proposed resolutions:");
+                                cliclack::log::warning("Environment conflicts detected. Proposed resolutions:")?;
 
                                 for action in &intel.proposed_actions {
                                     match action {
@@ -322,50 +314,47 @@ impl ResolveCommand {
                                             manager,
                                             command,
                                         } => {
-                                            ui::println(format!(
-                                                "  {} {}: {} {}",
-                                                Icon::Wrench,
-                                                Theme::primary(manager),
-                                                Theme::muted("Run"),
-                                                Theme::bold(command)
-                                            ));
+                                            cliclack::log::info(format!(
+                                                "  🔧 {}: {} {}",
+                                                console::style(manager).green(),
+                                                console::style("Run").dim(),
+                                                console::style(command).bold()
+                                            ))?;
                                         }
                                         env_manifest::ResolutionAction::AutoShim {
                                             url,
                                             binary_name,
                                         } => {
-                                            ui::println(format!(
-                                                "  {} {}: {} from {}",
-                                                Icon::Download,
-                                                Theme::primary(binary_name),
-                                                Theme::muted("Auto-shim"),
+                                            cliclack::log::info(format!(
+                                                "  📥 {}: {} from {}",
+                                                console::style(binary_name).green(),
+                                                console::style("Auto-shim").dim(),
                                                 url
-                                            ));
+                                            ))?;
                                         }
                                         env_manifest::ResolutionAction::ConfigUpdate {
                                             path,
                                             ..
                                         } => {
-                                            ui::println(format!(
-                                                "  {} {}: {}",
-                                                Icon::File,
-                                                Theme::primary("Config"),
-                                                Theme::muted(path)
-                                            ));
+                                            cliclack::log::info(format!(
+                                                "  📄 {}: {}",
+                                                console::style("Config").green(),
+                                                console::style(path).dim()
+                                            ))?;
                                         }
                                         env_manifest::ResolutionAction::ManualPrompt {
                                             message,
                                             ..
                                         } => {
-                                            ui::println(format!("  {} {}", Icon::Info, message));
+                                            cliclack::log::info(format!("  ℹ️  {}", message))?;
                                         }
                                     }
                                 }
 
-                                if prompt::confirm("Apply recommended resolutions?") {
+                                if cliclack::confirm("Apply recommended resolutions?").interact()? {
                                     for action in intel.proposed_actions {
                                         // TODO: Implement actual execution of actions
-                                        ui::info(format!("Applying resolution: {:?}", action));
+                                        cliclack::log::info(format!("Applying resolution: {:?}", action))?;
                                     }
                                 }
                             }
@@ -374,16 +363,16 @@ impl ResolveCommand {
                 }
 
                 if let Some(state) = output.state {
-                    ui::info(format!("Opaque State: {}", state));
+                    cliclack::note("Opaque State", state)?;
                 }
             }
             Ok(Err(e)) => {
-                spinner.fail("Plugin Logic Error");
-                ui::error(format!("Error: {}", e));
+                spinner.error("Plugin Logic Error");
+                cliclack::log::error(format!("Error: {}", e))?;
             }
             Err(e) => {
-                spinner.fail("Host/Runtime Error");
-                ui::error(format!("Error: {}", e));
+                spinner.error("Host/Runtime Error");
+                cliclack::log::error(format!("Error: {}", e))?;
             }
         }
 

@@ -40,7 +40,6 @@ pub struct SatEngine {
     pub registry: HashMap<String, Vec<SolverPackage>>,
 
     strings: RefCell<Vec<String>>,
-    string_to_id: RefCell<HashMap<String, u32>>,
     names: RefCell<Vec<String>>,
     name_to_id: RefCell<HashMap<String, NameId>>,
 
@@ -54,7 +53,6 @@ impl SatEngine {
         Self {
             registry: HashMap::new(),
             strings: RefCell::new(Vec::new()),
-            string_to_id: RefCell::new(HashMap::new()),
             names: RefCell::new(Vec::new()),
             name_to_id: RefCell::new(HashMap::new()),
             version_sets: RefCell::new(Vec::new()),
@@ -74,18 +72,6 @@ impl SatEngine {
                 solvables.push(pkg.clone());
             }
         }
-    }
-
-    fn intern_string(&self, s: &str) -> StringId {
-        let mut map = self.string_to_id.borrow_mut();
-        if let Some(&id) = map.get(s) {
-            return StringId(id);
-        }
-        let mut strings = self.strings.borrow_mut();
-        let id = strings.len() as u32;
-        strings.push(s.to_string());
-        map.insert(s.to_string(), id);
-        StringId(id)
     }
 
     pub fn intern_package_name(&self, name: &str) -> NameId {

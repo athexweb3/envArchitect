@@ -6,10 +6,8 @@ members = [
     "apps/registry-api",
     "packages/sdks/rust/sdk",
     "packages/sdks/rust/macros",
-    "examples/simple-plugin",
     "examples/feature-stress-plugin",
     "packages/manifest",
-    "packages/env-lsp",
 ]
 
 [workspace.package]

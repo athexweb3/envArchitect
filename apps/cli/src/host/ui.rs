@@ -1,5 +1,3 @@
-use crate::ui;
-use crate::ui::components::prompt;
 use tokio::task::spawn_blocking;
 
 // Define the bindings module structure to match wit-bindgen output
@@ -12,40 +10,40 @@ impl Host for HostState {
     async fn log(&mut self, level: LogLevel, message: String) -> () {
         match level {
             LogLevel::Debug => (), // Skip debug
-            LogLevel::Info => ui::info(message),
-            LogLevel::Warn => ui::warn(message),
-            LogLevel::Error => ui::error(message),
+            LogLevel::Info => { let _ = cliclack::log::info(message); },
+            LogLevel::Warn => { let _ = cliclack::log::warning(message); },
+            LogLevel::Error => { let _ = cliclack::log::error(message); },
         }
     }
 
     async fn confirm(&mut self, prompt_msg: String, _default: bool) -> bool {
-        // Inquire handles defaults internally or via wrapper, our wrapper sets true as default
-        spawn_blocking::<_, bool>(move || prompt::confirm(&prompt_msg))
-            .await
-            .unwrap_or(false)
+        spawn_blocking(move || {
+            cliclack::confirm(prompt_msg).interact().unwrap_or(false)
+        })
+        .await
+        .unwrap_or(false)
     }
 
     async fn input(&mut self, prompt_msg: String, _default: Option<String>) -> String {
-        spawn_blocking::<_, String>(move || prompt::input(&prompt_msg))
-            .await
-            .unwrap_or_default()
+        spawn_blocking(move || {
+            cliclack::input(prompt_msg).interact().unwrap_or_default()
+        })
+        .await
+        .unwrap_or_default()
     }
 
     async fn secret(&mut self, prompt_msg: String) -> String {
         // Enforce capability
         if !self.allowed_capabilities.contains(&"ui-secret".to_string()) {
-            // High-fidelity diagnostic
-            if let (Some(path), Some(content)) = (&self.manifest_path, &self.manifest_content) {
-                ui::diagnostic::report_denied_capability(path, content, "ui-secret");
-            } else {
-                ui::error("Capability Denied: ui-secret (No manifest context available)");
-            }
+            let _ = cliclack::log::error("Capability Denied: ui-secret");
             return String::new();
         }
 
-        spawn_blocking::<_, String>(move || prompt::secret(&prompt_msg))
-            .await
-            .unwrap_or_default()
+        spawn_blocking(move || {
+            cliclack::password(prompt_msg).interact().unwrap_or_default()
+        })
+        .await
+        .unwrap_or_default()
     }
 
     async fn select(
@@ -54,10 +52,12 @@ impl Host for HostState {
         options: Vec<String>,
         _default: Option<String>,
     ) -> String {
-        spawn_blocking::<_, String>(move || {
-            // Options need to be &str for our wrapper, converting
-            let opts_ref: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
-            prompt::select(&prompt_msg, opts_ref)
+        spawn_blocking(move || {
+            let mut selection = cliclack::select(prompt_msg);
+            for opt in &options {
+                selection = selection.item(opt, opt, "");
+            }
+            selection.interact().map(|s| s.to_string()).unwrap_or_default()
         })
         .await
         .unwrap_or_default()

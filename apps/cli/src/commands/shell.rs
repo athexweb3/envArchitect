@@ -12,8 +12,6 @@ pub struct ShellCommand {
 
 impl ShellCommand {
     pub async fn execute(self) -> Result<()> {
-        use crate::ui::{Icon, Theme};
-
         let root = self
             .project_root
             .clone()
@@ -21,17 +19,17 @@ impl ShellCommand {
 
         let absolute_root = std::fs::canonicalize(&root).unwrap_or(root);
 
-        println!(
-            "{} {} {}",
-            Icon::Architect,
-            Theme::primary("Activating Environment:"),
-            Theme::bold(
-                absolute_root
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("Project")
-            )
-        );
+        let project_name = absolute_root
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("Project");
+
+        cliclack::intro(console::style("Architect Shell").on_cyan().black())?;
+        
+        cliclack::log::info(format!(
+             "Activating Environment: {}", 
+             console::style(project_name).bold().cyan()
+        ))?;
 
         // 1. Discover required shims from env.json/toml
         // For Phase 1, we simply create a temporary shims directory and add it to PATH
@@ -44,14 +42,10 @@ impl ShellCommand {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "zsh".to_string());
 
         // Update PATH: Prepend shims directory
-        let mut path_env = std::env::var("PATH").unwrap_or_default();
+        let path_env = std::env::var("PATH").unwrap_or_default();
         let new_path = format!("{}:{}", shims_dir.to_string_lossy(), path_env);
 
-        println!(
-            "{} Spawning {} with Architect context...",
-            Icon::Success,
-            shell
-        );
+        cliclack::log::success(format!("Spawning {} with Architect context...", shell))?;
 
         let mut child = Command::new(&shell)
             .env("PATH", new_path)
@@ -65,9 +59,9 @@ impl ShellCommand {
         let status = child.wait()?;
 
         if status.success() {
-            println!("\n{} Shell exited successfully.", Icon::Success);
+            cliclack::outro("Shell exited successfully.")?;
         } else {
-            println!("\n{} Shell exited with error.", Icon::Cross);
+            cliclack::log::error("Shell exited with error.")?;
         }
 
         Ok(())

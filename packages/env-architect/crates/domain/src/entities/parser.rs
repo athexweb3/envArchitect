@@ -109,7 +109,6 @@ impl ManifestParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     #[test]
     fn test_parse_json_minimal() {

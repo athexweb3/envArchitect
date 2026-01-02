@@ -1,5 +1,5 @@
 import * as path from "path";
-import { type ExtensionContext, workspace } from "vscode";
+import { commands, type ExtensionContext, workspace } from "vscode";
 import {
 	LanguageClient,
 	type LanguageClientOptions,
@@ -13,7 +13,7 @@ export function activate(context: ExtensionContext) {
 	// In development, we run the binary directly from target/debug
 	// In production, this would point to the bundled binary
 	const serverPath = context.asAbsolutePath(
-		path.join("..", "..", "target", "debug", "lsp-server"),
+		path.join("..", "..", "target", "debug", "env-lsp"),
 	);
 
 	const serverOptions: ServerOptions = {
@@ -22,7 +22,11 @@ export function activate(context: ExtensionContext) {
 	};
 
 	const clientOptions: LanguageClientOptions = {
-		documentSelector: [{ scheme: "file", language: "env-toml" }],
+		documentSelector: [
+			{ scheme: "file", language: "env-toml" },
+			{ scheme: "file", language: "json", pattern: "**/env.json" },
+			{ scheme: "file", language: "toml", pattern: "**/{env,plugin}.toml" },
+		],
 	};
 
 	client = new LanguageClient(
@@ -30,6 +34,15 @@ export function activate(context: ExtensionContext) {
 		"EnvArchitect Language Server",
 		serverOptions,
 		clientOptions,
+	);
+
+	context.subscriptions.push(
+		commands.registerCommand("env-architect.restartServer", async () => {
+			if (client) {
+				await client.stop();
+				await client.start();
+			}
+		}),
 	);
 
 	client.start();

@@ -23,14 +23,14 @@ anyhow = { workspace = true }
 clap = { workspace = true }
 tokio = { workspace = true }
 console = "0.15"
-inquire = "0.7"
-indicatif = { workspace = true }
-owo-colors = "4.0"
-termimad = "0.20"
-comfy-table = { workspace = true }
+# inquire = "0.7"
+# indicatif = { workspace = true }
+# owo-colors = "4.0"
+# termimad = "0.20"
+# comfy-table = { workspace = true }
 thiserror = "1.0"
 miette = { version = "7.0", features = ["fancy"] }
-ratatui = "0.26"
+# ratatui = "0.26"
 url = "2.5"
 
 # WASM Host Runtime
@@ -42,3 +42,5 @@ serde_json = { workspace = true }
 serde_yaml = "0.9.34"
 toml = "0.8"
 notify = "6.1"
+cliclack = "0.3.7"
+domain = { path = "../../packages/env-architect/crates/domain" }

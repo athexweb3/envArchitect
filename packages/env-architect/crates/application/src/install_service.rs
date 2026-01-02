@@ -4,11 +4,9 @@ use url::Url;
 
 use domain::dependency::graph::ExecutionDag;
 use domain::dependency::solver::{SatEngine, SolverPackage};
-use domain::math::kalman::ProgressEstimator;
 use domain::security::tuf::RepositoryVerifier;
 use infrastructure::runtime::wasm::PluginRuntime;
 
-use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 
 /// The core orchestrator that wires all Brain components together.
@@ -20,7 +18,7 @@ pub struct InstallService {
     sat_engine: SatEngine,
     tuf_verifier: RepositoryVerifier,
     wasm_runtime: PluginRuntime,
-    registry_url: Url,
+    _registry_url: Url,
 }
 
 impl InstallService {
@@ -40,7 +38,7 @@ impl InstallService {
             sat_engine,
             tuf_verifier,
             wasm_runtime,
-            registry_url,
+            _registry_url: registry_url,
         })
     }
 

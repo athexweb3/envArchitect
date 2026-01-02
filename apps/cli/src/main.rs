@@ -10,7 +10,6 @@ use application::InstallService;
 mod commands;
 mod core;
 mod host;
-mod ui;
 mod utils;
 
 #[derive(Parser)]
@@ -85,21 +84,23 @@ async fn main() -> Result<()> {
 
     match cli.command {
         Commands::Install { path, force } => {
-            println!("🚀 EnvArchitect - Install");
-            println!("⚠️  Force mode: {}", force);
+            cliclack::intro(console::style("EnvArchitect Install").bold())?;
+            if force {
+                cliclack::log::warning("Force mode enabled")?;
+            }
 
             let (_manifest_path, manifest) = match path {
                 Some(p) => {
-                    println!("📄 Loading manifest from: {:?}", p);
+                    cliclack::log::step(format!("Loading manifest from: {:?}", p))?;
                     (p.clone(), utils::loader::load_manifest(&p)?)
                 }
                 None => {
-                    println!("🔍 Searching for manifest in current directory...");
+                    cliclack::log::step("Searching for manifest in current directory...")?;
                     utils::loader::find_and_load_manifest(&std::env::current_dir()?)?
                 }
             };
 
-            println!("✅ Loaded project: {}", &manifest.project.name);
+            cliclack::log::success(format!("Loaded project: {}", &manifest.project.name))?;
 
             let registry_url =
                 Url::parse("https://registry.env-architect.dev").context("Invalid registry URL")?;
@@ -112,24 +113,35 @@ async fn main() -> Result<()> {
             std::fs::create_dir_all(&tuf_cache)?;
 
             let mut service = InstallService::new(registry_url, tuf_root, tuf_cache)?;
-
+            
+            // TODO: Wrap this in a spinner if possible, or let it log
             // Execute installation from manifest
             service.install_from_manifest(manifest).await?;
+            
+            cliclack::outro("Installation complete")?;
         }
         Commands::Resolve(cmd) => {
             cmd.execute().await?;
         }
         Commands::Publish { path } => {
-            println!("📦 TODO: Publish package from manifest: {:?}", path);
+            cliclack::intro("EnvArchitect Publish")?;
+            cliclack::log::info(format!("TODO: Publish package from manifest: {:?}", path))?;
+            cliclack::outro("Done")?;
         }
         Commands::Search { query } => {
-            println!("🔍 Searching for: {}", query);
+            cliclack::intro("EnvArchitect Search")?;
+            cliclack::log::info(format!("Searching for: {}", query))?;
+            cliclack::outro("Done")?;
         }
         Commands::Audit => {
-            println!("🛡️  Auditing system...");
+            cliclack::intro("EnvArchitect Audit")?;
+            cliclack::log::info("Auditing system...")?;
+            cliclack::outro("Audit complete")?;
         }
         Commands::Login => {
-            println!("🔐 Login flow initiated");
+            cliclack::intro("Login")?;
+            cliclack::log::info("Login flow initiated")?;
+            cliclack::outro("You are logged in")?;
         }
         Commands::Dev(cmd) => {
             cmd.execute().await?;
