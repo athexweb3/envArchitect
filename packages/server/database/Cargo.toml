@@ -14,3 +14,4 @@ chrono = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
+pgvector = { version = "0.3", features = ["sqlx"] }
