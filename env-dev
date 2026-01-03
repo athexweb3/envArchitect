@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# EnvArchitect Development CLI Wrapper
+# This script allows you to use 'env' command in development mode
+# pointing to your local development build
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$SCRIPT_DIR"
+
+# Run the CLI in development mode
+cargo run --quiet --manifest-path "$PROJECT_ROOT/apps/cli/Cargo.toml" -- "$@"
