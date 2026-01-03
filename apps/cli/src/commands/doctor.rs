@@ -1,4 +1,4 @@
-use anyhow::{Result};
+use anyhow::Result;
 use clap::Parser;
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
@@ -54,9 +54,8 @@ impl DoctorCommand {
         // EMBEDDING THE DOCTOR PLUGIN HERE
         // Relative to this file: apps/cli/src/commands/doctor.rs
         // We need to go up to root: ../../../../
-        const DOCTOR_WASM: &[u8] = include_bytes!(
-            "../../../../target/wasm32-wasip1/debug/env_plugin_doctor.component.wasm"
-        );
+        const DOCTOR_WASM: &[u8] =
+            include_bytes!("../../../../target/wasm32-wasip1/debug/env_plugin_doctor.wasm");
 
         let component = Component::new(&engine, DOCTOR_WASM)?;
         let plugin = Plugin::instantiate_async(&mut store, &component, &linker).await?;

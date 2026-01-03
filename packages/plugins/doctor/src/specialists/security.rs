@@ -43,6 +43,19 @@ impl PolyglotSecurityCheck {
             }];
         }
 
+        // 2. Check for Lockfile (Required for audit)
+        if host::read_file("Cargo.lock").is_err() {
+            return vec![Diagnostic {
+                severity: Severity::Warning,
+                code: "SEC_RUST_LOCK_MISSING".to_string(),
+                title: "Security Scan Skipped".to_string(),
+                message: "No 'Cargo.lock' found. Cannot audit dependencies.".to_string(),
+                advice: Some("Run 'cargo generate-lockfile' if this is a standalone crate, or run doctor from workspace root.".to_string()),
+                data: Default::default(),
+                treatment: None,
+            }];
+        }
+
         // 2. Run cargo audit
         // Note: cargo audit exits with 1 if vulnerabilities are found, causing host::exec to return Err
         let result = host::exec("cargo", &["audit", "--json", "--no-fetch"]);

@@ -29,9 +29,9 @@ impl SystemExecutor {
         let allowed_caps = vec![
             "ui-interact".to_string(),
             "ui-secret".to_string(),
-            "fs-read".to_string(), // For reading .nvmrc if needed (though skipped in system mode)
-            "exec".to_string(),    // Future: allow plugin to check current versions
-            "env-read".to_string(), // Read NVM_DIR
+            "fs-read".to_string(),
+            "sys-exec".to_string(), // Future: allow plugin to check current versions
+            "env-read".to_string(),
         ];
 
         // Host state for system install doesn't need a manifest
@@ -56,7 +56,12 @@ impl SystemExecutor {
             "target_arch": std::env::consts::ARCH,
             "project_root": "/", // System root
             "env_vars": {},
-            "allowed_capabilities": ["ui-interact"],
+            "allowed_capabilities": [
+                "ui-interact",
+                { "sys-exec": ["*"] },
+                { "env-read": ["*"] },
+                { "fs-read": ["*"] }
+            ],
             "parent_manifest": null,
             "system_tools": {}
         });
