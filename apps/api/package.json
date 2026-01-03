@@ -1,0 +1,8 @@
+{
+	"name": "api-server",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"dev": "cargo run --manifest-path ../../packages/server/api/Cargo.toml"
+	}
+}

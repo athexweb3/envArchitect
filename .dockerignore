@@ -1,0 +1,11 @@
+target/
+.git/
+node_modules/
+apps/*/target/
+apps/*/node_modules/
+packages/*/target/
+packages/*/node_modules/
+dist/
+build/
+.env
+.DS_Store
