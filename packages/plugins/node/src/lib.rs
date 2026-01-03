@@ -43,6 +43,42 @@ impl Plugin for NodePlugin {
             );
         }
 
+        // 0. Detect Current Version
+        let nvm_dir = host::get_env("NVM_DIR").unwrap_or_else(|| "$HOME/.nvm".to_string());
+
+        // Try to detect managed NVM version
+        let check_cmd = format!(
+            "export NVM_DIR=\"{}\"; [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\" && nvm current",
+            nvm_dir
+        );
+
+        let current_version = match host::exec("bash", &["-c", &check_cmd]) {
+            Ok(out) => {
+                let trimmed = out.trim();
+                if !trimmed.is_empty() && trimmed != "none" {
+                    Some(trimmed.to_string())
+                } else {
+                    None
+                }
+            }
+            Err(_e) => None,
+        };
+
+        let should_prompt = if let Some(ver) = current_version {
+            // Found existing version
+            host::confirm(
+                &format!("Node.js {} is currently active. Change version?", ver),
+                false,
+            )
+        } else {
+            // No info, definitely prompt
+            true
+        };
+
+        if !should_prompt {
+            return Ok((plan, Some(custom_state)));
+        }
+
         // 1. Interactive Version Selection
         let options = vec![
             "Stable (LTS) - Recommended",
