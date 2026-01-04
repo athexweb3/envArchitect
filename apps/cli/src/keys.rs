@@ -16,10 +16,10 @@ pub fn generate_or_load_signing_key() -> Result<SigningKey> {
     // 1. Try Keyring
     if let Ok(secret) = entry.get_password() {
         if let Ok(bytes) = general_purpose::STANDARD.decode(&secret) {
+            let bytes: Vec<u8> = bytes; // Explicit type check fallback
             if bytes.len() == 32 {
                 let key_bytes: [u8; 32] = bytes.try_into().unwrap();
                 let key = SigningKey::from_bytes(&key_bytes);
-                // debug log removed
                 return Ok(key);
             }
         }
@@ -35,10 +35,10 @@ pub fn generate_or_load_signing_key() -> Result<SigningKey> {
     if key_path.exists() {
         let secret = std::fs::read_to_string(&key_path)?;
         if let Ok(bytes) = general_purpose::STANDARD.decode(&secret) {
+            let bytes: Vec<u8> = bytes; // Explicit type check fallback
             if bytes.len() == 32 {
                 let key_bytes: [u8; 32] = bytes.try_into().unwrap();
                 let key = SigningKey::from_bytes(&key_bytes);
-                // debug log removed
                 return Ok(key);
             }
         }
