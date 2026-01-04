@@ -10,6 +10,7 @@ use application::InstallService;
 mod commands;
 mod core;
 mod host;
+mod keys;
 mod utils;
 
 #[derive(Parser)]
