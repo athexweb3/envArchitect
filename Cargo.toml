@@ -22,7 +22,7 @@ description = "A declarative environment architecture tool for defining, version
 repository = "https://github.com/athexweb3/envArchitect"
 homepage = "https://github.com/athexweb3/envArchitect"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 env-architect = { path = "packages/env-architect" }

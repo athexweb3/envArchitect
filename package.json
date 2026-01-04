@@ -3,6 +3,7 @@
 	"version": "0.1.0",
 	"description": "A declarative environment architecture tool for defining, versioning, and distributing development environments.",
 	"author": "athexweb3 <athexweb3@gmail.com>",
+	"license": "(Apache-2.0 OR MIT)",
 	"private": true,
 	"workspaces": [
 		"apps/*",
