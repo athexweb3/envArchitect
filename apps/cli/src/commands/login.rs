@@ -26,7 +26,7 @@ impl LoginCommand {
         let initiate_url = registry_url.join("/oauth/device/code")?;
         log::info(format!("Connecting to {}...", initiate_url))?;
 
-        let initiate_res = client
+        let initiate_res: reqwest::Response = client
             .get(initiate_url)
             .send()
             .await
@@ -70,7 +70,7 @@ impl LoginCommand {
         s.start("Waiting for authorization...");
 
         let token_response = loop {
-            let res = client
+            let res: reqwest::Response = client
                 .get(poll_url.clone())
                 .query(&[("device_code", &device_code_data.device_code)])
                 .send()
@@ -177,7 +177,7 @@ impl LoginCommand {
         let client = Client::new();
         let register_url = registry.join("/auth/register-key")?;
 
-        let response = client
+        let response: reqwest::Response = client
             .post(register_url)
             .header("Authorization", format!("Bearer {}", token))
             .json(&RegisterKeyRequest { public_key })
