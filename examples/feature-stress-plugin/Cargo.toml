@@ -8,7 +8,8 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-env-architect-sdk = { path = "../../packages/sdks/rust/sdk" }
+env-architect-sdk = { path = "../../packages/sdks/rust/crates/sdk" }
+env-architect-macros = { path = "../../packages/sdks/rust/crates/macros" }
 anyhow = "1.0"
 serde_json = "1.0"
 wit-bindgen = { version = "0.36.0", features = ["realloc"] }

@@ -10,8 +10,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # SDK
-env-architect-sdk = { path = "../../sdks/rust/sdk" }
-wit-bindgen = "0.26.0"
+env-architect-sdk = { path = "../../sdks/rust/crates/sdk" }
+env-architect-macros = { path = "../../sdks/rust/crates/macros" }
+wit-bindgen = "0.36.0"
 # Logic
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
