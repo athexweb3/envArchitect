@@ -33,7 +33,7 @@ pub struct PublishCommand {
 
 use shared::dto::{DependencyPayload as DependencyInfo, PublishPayload};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct MetadataFile {
     name: String,
     version: String,
@@ -87,7 +87,7 @@ impl PublishCommand {
             let api_url =
                 std::env::var("REGISTRY_API_URL").unwrap_or("http://localhost:3000".to_string());
             let client = reqwest::Client::new();
-            let res = client
+            let res: reqwest::Response = client
                 .get(format!("{}/auth/ghcr-token", api_url))
                 .header("Authorization", format!("Bearer {}", access_token))
                 .send()
@@ -127,7 +127,7 @@ impl PublishCommand {
             let api_url =
                 std::env::var("REGISTRY_API_URL").unwrap_or("http://localhost:3000".to_string());
             let client = reqwest::Client::new();
-            let res = client
+            let res: reqwest::Response = client
                 .put(format!("{}/auth/ghcr-token", api_url))
                 .header("Authorization", format!("Bearer {}", access_token))
                 .json(&serde_json::json!({ "pat": pat }))
@@ -385,7 +385,6 @@ impl PublishCommand {
             layers: layers_desc,
             annotations: annotations_map.clone(),
             artifact_type: None,
-            subject: None,
         };
 
         // Prepare Config for Client (legacy struct)
@@ -474,7 +473,7 @@ impl PublishCommand {
         }
 
         // 6. Send Request with Signature
-        let res = client
+        let res: reqwest::Response = client
             .post(format!("{}/v1/publish", api_url))
             .header("Authorization", format!("Bearer {}", access_token))
             .header("X-Signature", signature_b64)
@@ -514,7 +513,7 @@ impl PublishCommand {
         let api_url =
             std::env::var("REGISTRY_API_URL").unwrap_or("http://localhost:3000".to_string());
         let client = reqwest::Client::new();
-        let res = client
+        let res: reqwest::Response = client
             .get(format!("{}/auth/me", api_url))
             .header("Authorization", format!("Bearer {}", access_token))
             .send()

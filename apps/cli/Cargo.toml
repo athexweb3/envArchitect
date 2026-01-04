@@ -36,6 +36,7 @@ url = "2.5"
 # WASM Host Runtime
 wasmtime = "26.0"
 wasmtime-wasi = "26.0"
+wasmtime-wasi-http = "26.0"
 wit-bindgen = { version = "0.36.0", features = ["realloc"] }
 async-trait = "0.1"
 serde_json = { workspace = true }
@@ -48,3 +49,17 @@ dirs = "5.0"
 chrono = { version = "0.4", features = ["serde"] }
 domain = { path = "../../packages/env-architect/crates/domain" }
 regex = "1.12.2"
+serde = { workspace = true }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+hex = "0.4"
+open = "5.3"
+keyring = "3.0"
+shared = { path = "../../packages/server/shared" }
+database = { path = "../../packages/server/database" }
+oci-client = { version = "0.13", default-features = false, features = [
+    "rustls-tls",
+] }
+sha2 = "0.10"
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+rand = "0.8"
+base64 = "0.22"
