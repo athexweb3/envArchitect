@@ -4,8 +4,8 @@ members = [
     "apps/cli",
     "packages/server/worker",
     "packages/server/api",
-    "packages/sdks/rust/sdk",
-    "packages/sdks/rust/macros",
+    "packages/sdks/rust/crates/sdk",
+    "packages/sdks/rust/crates/macros",
     "examples/feature-stress-plugin",
     "packages/manifest",
     "packages/server/database",
@@ -58,6 +58,8 @@ tracing-subscriber = "0.3"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 uuid = { version = "1.7", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+semver = { version = "1.0.24", features = ["serde"] }
+wit-bindgen = { version = "0.36.0", features = ["realloc"] }
 sigstore = "0.8" # For future phase
 petgraph = "0.8" # For dependency engine
 dotenv = "0.15"
