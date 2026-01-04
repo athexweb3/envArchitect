@@ -1,0 +1,15 @@
+{
+	"name": "basic-plugin-example",
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"build": "bun build src/index.ts --outfile dist/index.js --external \"env-architect:plugin/*\" --target browser && bun run componentize",
+		"componentize": "node ../../dist/scripts/build.js dist/index.js plugin.wasm"
+	},
+	"dependencies": {
+		"@env-architect/sdk": "../../"
+	},
+	"devDependencies": {
+		"typescript": "^5.7.0"
+	}
+}

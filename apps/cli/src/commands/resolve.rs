@@ -24,6 +24,10 @@ pub struct ResolveCommand {
     /// Project root directory (defaults to current directory)
     #[arg(long)]
     pub project_root: Option<PathBuf>,
+
+    /// Skip confirmation
+    #[arg(long, short = 'y')]
+    pub yes: bool,
 }
 
 impl ResolveCommand {
@@ -42,9 +46,11 @@ impl ResolveCommand {
             console::style("v0.1.0").dim()
         ))?;
 
-        if !cliclack::confirm("Start environment resolution?").interact()? {
-            cliclack::log::error("Operation cancelled.")?;
-            return Ok(());
+        if !self.yes {
+            if !cliclack::confirm("Start environment resolution?").interact()? {
+                cliclack::log::error("Operation cancelled.")?;
+                return Ok(());
+            }
         }
 
         let spinner = cliclack::spinner();
@@ -57,9 +63,11 @@ impl ResolveCommand {
 
         let engine = Engine::new(&config)?;
         let mut linker: Linker<HostState> = Linker::new(&engine);
+        linker.allow_shadowing(true);
 
         // 2. Link Host Capabilities
         wasmtime_wasi::add_to_linker_async(&mut linker)?;
+        wasmtime_wasi_http::add_to_linker_async(&mut linker)?;
         crate::host::bindings::Plugin::add_to_linker(&mut linker, |state: &mut HostState| state)?;
 
         // 3. Initialize Host State

@@ -289,6 +289,7 @@ impl DevCommand {
             plugin: wasm_path,
             dry_run: true,
             project_root: Some(self.path.clone()),
+            yes: true,
         };
 
         resolve_cmd.execute().await?;

@@ -1,0 +1,29 @@
+{
+	"name": "@env-architect/sdk",
+	"version": "0.1.0",
+	"description": "TypeScript SDK for creating EnvArchitect plugins (Wasm Components)",
+	"main": "dist/src/index.js",
+	"types": "dist/src/index.d.ts",
+	"scripts": {
+		"build": "bun run codegen && tsc && tsc-alias",
+		"codegen": "jco types ../wit/plugin.wit --world-name plugin --out-dir src/bindings && tsc",
+		"componentize": "tsc && node dist/scripts/build.js"
+	},
+	"keywords": [
+		"env-architect",
+		"sdk",
+		"wasm",
+		"component-model",
+		"typescript"
+	],
+	"author": "athexweb3 <athexweb3@gmail.com>",
+	"license": "MIT OR Apache-2.0",
+	"dependencies": {},
+	"devDependencies": {
+		"@bytecodealliance/componentize-js": "^0.19.3",
+		"@bytecodealliance/jco": "^1.15.1",
+		"@types/node": "^22.0.0",
+		"tsc-alias": "^1.8.10",
+		"typescript": "^5.7.0"
+	}
+}
