@@ -16,8 +16,9 @@ We currently support security updates for the latest major version.
 If you discover a security vulnerability within EnvArchitect, please do **not** disclose it publicly until it has been addressed.
 
 **How to report:**
-*   Email: `athexweb3@gmail.com`
-*   Subject: `[SECURITY] - <Vulnerability Name>`
+Please use the [GitHub Private Vulnerability Reporting](https://github.com/athexweb3/envArchitect/security/advisories/new) feature to report vulnerabilities securely.
+
+If that is not possible, you may email `athexweb3@gmail.com`.
 
 We commit to acknowledging your report as soon as possible and will provide regular updates on our remediation progress.
 
