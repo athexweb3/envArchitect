@@ -3,22 +3,37 @@ use crate::contract::reexports::{
     PlatformConstraints, ServiceDef,
 };
 use semver::{Version, VersionReq};
-// // use crate::contract::reexports::{DependencyDetails, ProjectMetadata};
-
-/// A Builder for constructing `EnhancedManifest`s easily in Rust.
-/// This prevents users from having to manually construct complex nested structs.
+/// A fluent builder for constructing `EnhancedManifest`s.
+///
+/// This builder provides a convenient, method-chaining API to create complex
+/// environment manifests without manually instantiating nested structures.
+///
+/// # Example
+///
+/// ```rust
+/// use env_architect_sdk::EnvBuilder;
+///
+/// let manifest = EnvBuilder::new()
+///     .project("my-project", "0.1.0")
+///     .add_dependency("node", "18.x")
+///     .build();
+/// ```
 pub struct EnvBuilder {
     manifest: EnhancedManifest,
 }
 
 impl EnvBuilder {
+    /// Creates a new, empty `EnvBuilder`.
     pub fn new() -> Self {
         Self {
             manifest: EnhancedManifest::default(),
         }
     }
 
-    /// Automatically load configuration from `env.json` in the project root.
+    /// Automatically loads configuration from `env.json` in the project root.
+    ///
+    /// This attempts to read `env.json` relative to the `project_root` in the context.
+    /// If successful, it populates the builder with project metadata.
     pub fn from_context(context: &crate::api::context::ResolutionContext) -> anyhow::Result<Self> {
         use crate::api::host;
         use std::path::PathBuf;
@@ -65,14 +80,18 @@ impl EnvBuilder {
         }
     }
 
-    /// Set project metadata
+    /// Sets the project metadata (name and version).
     pub fn project(mut self, name: &str, version: &str) -> Self {
         self.manifest.project.name = name.to_string();
         self.manifest.project.version = Version::parse(version).expect("Invalid SemVer version");
         self
     }
 
-    /// Add a production dependency
+    /// Adds a production dependency.
+    ///
+    /// # Arguments
+    /// * `name` - The package name of the dependency.
+    /// * `version_req` - A SemVer version requirement string (e.g., "^1.0").
     pub fn add_dependency(mut self, name: &str, version_req: &str) -> Self {
         self.manifest.dependencies.insert(
             name.to_string(),
@@ -81,7 +100,7 @@ impl EnvBuilder {
         self
     }
 
-    /// Add a dev dependency
+    /// Adds a development-only dependency.
     pub fn add_dev_dependency(mut self, name: &str, version_req: &str) -> Self {
         self.manifest.dev_dependencies.insert(
             name.to_string(),
@@ -90,7 +109,7 @@ impl EnvBuilder {
         self
     }
 
-    /// Add a conflict
+    /// Declares a conflict with another package.
     pub fn conflict(mut self, package: &str, reason: &str) -> Self {
         self.manifest
             .conflicts
@@ -98,13 +117,13 @@ impl EnvBuilder {
         self
     }
 
-    /// Add a background service
+    /// Adds a background service definition.
     pub fn service(mut self, name: &str, service: ServiceDef) -> Self {
         self.manifest.services.insert(name.to_string(), service);
         self
     }
 
-    /// Add a required security capability
+    /// Declares a required security capability.
     pub fn capability(mut self, cap: Capability) -> Self {
         if let Some(caps) = &mut self.manifest.capabilities {
             caps.push(cap);
@@ -114,18 +133,18 @@ impl EnvBuilder {
         self
     }
 
-    /// Add an asset for air-gap mode
+    /// Adds an asset bundle for air-gapped environments.
     pub fn asset(mut self, asset: Asset) -> Self {
         self.manifest.assets.push(asset);
         self
     }
 
-    /// Add a supported platform
+    /// Adds platform constraints (OS and Architecture support).
     pub fn support_platform(mut self, os: &str, arch: &str) -> Self {
         if self.manifest.platform.is_none() {
             self.manifest.platform = Some(PlatformConstraints {
-                platforms: vec![],     // Clear default "Any"
-                architectures: vec![], // Clear default "Any"
+                platforms: vec![],
+                architectures: vec![],
                 requirements: Default::default(),
             });
         }
@@ -148,7 +167,7 @@ impl EnvBuilder {
         self
     }
 
-    /// Add a proposed resolution action for a conflict
+    /// Adds a proposed resolution action for a conflict.
     pub fn resolution_action(mut self, action: env_manifest::ResolutionAction) -> Self {
         if self.manifest.intelligence.is_none() {
             self.manifest.intelligence = Some(env_manifest::IntelligenceData::default());
@@ -160,7 +179,7 @@ impl EnvBuilder {
         self
     }
 
-    /// Build the final manifest
+    /// Consumes the builder and returns the construct `EnhancedManifest`.
     pub fn build(self) -> EnhancedManifest {
         self.manifest
     }

@@ -1,0 +1,7 @@
+# These are supported funding model platforms
+
+github: # [user1, user2] - Add this AFTER setting up Open Collective as Fiscal Host
+patreon: athexweb3 # BEST OPTION: Withdraw via Payoneer (Guardian's account)
+open_collective: env-architect # BEST FOR EXPENSES: Pay hosting/domain bills directly
+polar: athexweb3 # Good alternative for issue-based funding
+custom: ["https://ud.me/athexweb3.wallet"] # Crypto/USDT (Direct Tip)

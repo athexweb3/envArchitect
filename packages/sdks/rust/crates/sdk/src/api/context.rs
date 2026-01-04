@@ -17,31 +17,35 @@ pub fn check_capability(cap: &str) -> bool {
     ACTIVE_CAPABILITIES.with(|c| c.borrow().contains(&cap.to_string()))
 }
 
-/// Context provided to the environment package during resolution
+/// Context provided to the environment package during resolution.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResolutionContext {
+    /// The target operating system (e.g., "linux", "macos", "windows").
     pub target_os: String,
+
+    /// The target CPU architecture (e.g., "x86_64", "aarch64").
     pub target_arch: String,
 
-    // Core Identity
+    /// The absolute path to the project root directory.
     pub project_root: String,
 
-    // User Configuration
+    /// Environment variables available to the plugin.
     pub env_vars: HashMap<String, String>,
 
-    // Capabilities granted to this execution
+    /// Capabilities explicitly granted to this plugin execution by the host.
     pub allowed_capabilities: Vec<crate::contract::reexports::Capability>,
 
-    // For recursive resolution (coming soon)
+    /// The manifest of the consumer project (if this plugin is being resolved as a dependency).
+    /// *Coming soon.*
     pub parent_manifest: Option<Box<EnhancedManifest>>,
 
-    // System Environment State (e.g., installed tools and their versions)
+    /// A map of tools already installed in the environment (e.g., `{"node": ["18.16.0"]}`).
     #[serde(default)]
     pub system_tools: HashMap<String, Vec<String>>,
 }
 
 impl ResolutionContext {
-    // Helper to create a context
+    /// Creates a new resolution context.
     pub fn new(
         target_os: impl Into<String>,
         target_arch: impl Into<String>,

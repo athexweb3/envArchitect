@@ -3,14 +3,16 @@ use quote::quote;
 use std::path::Path;
 use syn::{parse_macro_input, ItemStruct};
 
-// Macro logic starts here. File-based WIT is used now.
+// Macro logic implementation.
+// Attempts to locate plugin configuration from various sources and injects
+// the necessary WIT bindings and adapter code.
 
 #[proc_macro_attribute]
 pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input_struct = parse_macro_input!(input as ItemStruct);
     let struct_name = &input_struct.ident;
 
-    // Priority Matrix:
+    // Configuration Priority Order:
     // 1. env.toml
     // 2. plugin.toml
     // 3. env.json
@@ -112,7 +114,7 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     // 2. Load WIT Definition at compile time (relative to this macro crate)
-    let wit_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../wit/plugin.wit");
+    let wit_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../wit/plugin.wit");
     let wit_content = std::fs::read_to_string(&wit_path)
         .unwrap_or_else(|e| panic!("Failed to read WIT file at {:?}: {}", wit_path, e));
 
