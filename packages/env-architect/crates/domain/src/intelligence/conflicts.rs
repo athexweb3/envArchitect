@@ -73,10 +73,7 @@ impl ConflictResolver {
             Conflict::MissingTool { tool, required, .. } => {
                 self.resolve_missing_tool(tool, required)
             }
-            Conflict::IncompatibleDependency { .. } => {
-                // For now, return empty recommendations
-                Ok(Vec::new())
-            }
+            Conflict::IncompatibleDependency { .. } => Ok(Vec::new()),
         }
     }
 
@@ -276,7 +273,6 @@ impl ConflictResolver {
 
     /// Find the best version that matches requirement
     fn find_target_version(&self, required: &VersionReq) -> Result<Version> {
-        // For now, use a heuristic: if requirement is "^20.0.0", use "20.11.0"
         // In production, this would query the registry for available versions
 
         // Parse the requirement to extract major version
