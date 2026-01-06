@@ -13,7 +13,6 @@ impl SystemExecutor {
         let spinner = cliclack::spinner();
         spinner.start("Initializing system plugin...");
 
-        // 1. Configure Wasmtime
         let mut config = Config::new();
         config.wasm_component_model(true);
         config.async_support(true);
@@ -21,11 +20,9 @@ impl SystemExecutor {
         let engine = Engine::new(&config)?;
         let mut linker: Linker<HostState> = Linker::new(&engine);
 
-        // 2. Link Host Capabilities
         wasmtime_wasi::add_to_linker_async(&mut linker)?;
         crate::host::bindings::Plugin::add_to_linker(&mut linker, |state: &mut HostState| state)?;
 
-        // 3. Initialize Host State (Allow UI capabilities for interactive install)
         let allowed_caps = vec![
             "ui-interact".to_string(),
             "ui-secret".to_string(),
@@ -38,7 +35,6 @@ impl SystemExecutor {
         let host_state = HostState::new(allowed_caps, None, None);
         let mut store = Store::new(&engine, host_state);
 
-        // 4. Load Component
         // spinner.set_message("Reading plugin...");
         let component_bytes = std::fs::read(plugin_path)
             .with_context(|| format!("Failed to read plugin file: {:?}", plugin_path))?;
@@ -46,29 +42,26 @@ impl SystemExecutor {
         let component = Component::new(&engine, component_bytes)?;
         let plugin = Plugin::instantiate_async(&mut store, &component, &linker).await?;
 
-        // 5. Resolve (Interactive)
         spinner.stop("Plugin loaded.");
-        // We pause spinner because the plugin might ask for UI input (cliclack doesn't like concurrent spinner + input)
-        // Actually, Plugin runtime uses cliclack for UI too, so we should allow it.
 
-        let context = serde_json::json!({
-            "target_os": std::env::consts::OS,
-            "target_arch": std::env::consts::ARCH,
-            "project_root": "/", // System root
-            "env_vars": {},
-            "allowed_capabilities": [
-                "ui-interact",
-                { "sys-exec": ["*"] },
-                { "env-read": ["*"] },
-                { "fs-read": ["*"] }
-            ],
-            "parent_manifest": null,
-            "system_tools": {}
-        });
+        let allowed_caps_json = serde_json::to_string(&vec![
+            serde_json::json!("ui-interact"),
+            serde_json::json!({ "sys-exec": ["*"] }),
+            serde_json::json!({ "env-read": ["*"] }),
+            serde_json::json!({ "fs-read": ["*"] }),
+        ])?;
 
-        let result = plugin
-            .call_resolve(&mut store, &context.to_string())
-            .await?;
+        let context = crate::host::bindings::ResolutionContext {
+            target_os: std::env::consts::OS.to_string(),
+            target_arch: std::env::consts::ARCH.to_string(),
+            project_root: "/".to_string(),
+            env_vars_json: "{}".to_string(),
+            system_tools_json: "{}".to_string(),
+            configuration_json: "{}".to_string(),
+            allowed_capabilities_json: allowed_caps_json,
+        };
+
+        let result = plugin.call_resolve(&mut store, &context).await?;
 
         match result {
             Ok(output) => {

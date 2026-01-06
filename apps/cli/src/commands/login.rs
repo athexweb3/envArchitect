@@ -15,6 +15,7 @@ pub struct LoginCommand {
     pub registry: String,
 }
 
+#[allow(unused)]
 impl LoginCommand {
     pub async fn execute(&self) -> Result<()> {
         intro(console::style("EnvArchitect Login").bold())?;
@@ -22,7 +23,6 @@ impl LoginCommand {
         let client = Client::new();
         let registry_url = Url::parse(&self.registry)?;
 
-        // 1. Initiate Device Flow
         let initiate_url = registry_url.join("/oauth/device/code")?;
         log::info(format!("Connecting to {}...", initiate_url))?;
 
@@ -39,7 +39,6 @@ impl LoginCommand {
 
         let device_code_data: AuthDeviceResponse = initiate_res.json().await?;
 
-        // 2. Display User Code and Open Browser
         println!(
             "\nFirst, copy your one-time code: {}",
             console::style(&device_code_data.user_code).bold().yellow()
@@ -64,7 +63,6 @@ impl LoginCommand {
             ))?;
         }
 
-        // 3. Polling for Token
         let poll_url = registry_url.join("/oauth/token")?;
         let s = spinner();
         s.start("Waiting for authorization...");
@@ -93,10 +91,8 @@ impl LoginCommand {
 
         s.stop("Authorized!");
 
-        // 4. Securely store tokens
         self.store_tokens(&registry_url, &token_response).await?;
 
-        // 5. Automatic Key Generation & Registration
         if let Err(e) = self
             .register_signing_key(&registry_url, &token_response.access_token)
             .await
@@ -120,18 +116,15 @@ impl LoginCommand {
             .set_password(&token.access_token)
             .context("Failed to save token to keyring")?;
 
-        // Fallback/Secondary storage (hosts.toml) - Simplified for now
         let home = dirs::home_dir().context("Could not find home directory")?;
         let config_dir = home.join(".config").join("env-architect");
         std::fs::create_dir_all(&config_dir)?;
 
-        // We still save a hosts.toml for metadata/refresh tokens if needed
-        let hosts_path = config_dir.join("hosts.toml");
+        // We still save a hosts.json for metadata/refresh tokens if needed
+        let hosts_path = config_dir.join("hosts.json");
 
         // Fetch username from server if possible, or use a placeholder/session info
-        // For now, let's assume the server includes the username in TokenResponse or we fetch it
-        // Actually, TokenResponse doesn't have it yet. I should add it or fetch it.
-        // Let's fetch it via /auth/me since we have the token now.
+
         let client = Client::new();
         let me_url = registry.join("/auth/me")?;
         let username = if let Ok(res) = client
@@ -149,13 +142,15 @@ impl LoginCommand {
             "unknown".to_string()
         };
 
-        let content = format!(
-            "[\"{}\"]\nuser = \"{}\"\noauth_token = \"{}\"\nrefresh_token = \"{}\"\n",
-            domain,
-            username,
-            token.access_token,
-            token.refresh_token.as_deref().unwrap_or("")
-        );
+        let hosts_data = serde_json::json!({
+            domain: {
+                "user": username,
+                "oauth_token": token.access_token,
+                "refresh_token": token.refresh_token.as_deref().unwrap_or("")
+            }
+        });
+
+        let content = serde_json::to_string_pretty(&hosts_data)?;
         std::fs::write(hosts_path, content)?;
 
         Ok(())

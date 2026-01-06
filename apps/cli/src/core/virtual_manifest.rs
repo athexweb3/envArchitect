@@ -12,12 +12,11 @@ impl VirtualManifestBuilder {
     pub fn build(package_name: &str, resolution: &str) -> Result<EnhancedManifest> {
         let mut manifest = EnhancedManifest::default();
 
-        // 1. Setup minimal Project Metadata
         manifest.project = ProjectMetadata {
             name: format!("system-install-{}", package_name),
             version: "0.0.0-ephemeral"
                 .parse()
-                .unwrap_or_else(|_| "0.0.0".parse().unwrap()),
+                .expect("Failed to parse hardcoded ephemeral version"),
             description: format!("Ephemeral system context for {}", package_name),
             authors: vec!["env-architect-cli".to_string()],
             license: "".to_string(),
@@ -25,31 +24,28 @@ impl VirtualManifestBuilder {
             homepage: None,
         };
 
-        // 2. Add the requested dependency
         let mut deps = HashMap::new();
 
         // Parse resolution string (simple heuristic for this MVP)
         use env_architect::domain::entities::manifest::DependencyDetails;
         use semver::VersionReq;
 
-        let spec = if resolution.starts_with("path:") {
-            let path = resolution.trim_start_matches("path:");
+        let spec = if let Some(path) = resolution.strip_prefix("path:") {
             DependencySpec::Detailed(DependencyDetails {
-                version: VersionReq::parse("*").unwrap(),
+                version: VersionReq::parse("*").expect("Failed to parse wildcard version"),
                 manager: None,
                 source: Some(path.to_string()),
                 optional: false,
             })
         } else {
-            // Assume "registry:..." or just a version
-            // For "registry:node", we treat it as ANY version for now
-            DependencySpec::Simple(VersionReq::parse("*").unwrap())
+            DependencySpec::Simple(
+                VersionReq::parse("*").expect("Failed to parse wildcard version"),
+            )
         };
 
         deps.insert(package_name.to_string(), spec);
         manifest.dependencies = deps;
 
-        // 3. Inject standard capabilities based on the known plugin requirements.
         use env_architect::domain::entities::manifest::Capability;
 
         let caps = match package_name {
