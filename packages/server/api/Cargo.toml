@@ -8,19 +8,40 @@ license.workspace = true
 
 [dependencies]
 # Web Framework
-axum = { workspace = true }
+axum = { workspace = true, features = ["multipart"] }
 tower-http = { workspace = true }
+tower-sessions = "0.13"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-# Database
+# Database  
 sqlx = { workspace = true }
 database = { workspace = true }
+bb8 = "0.9"
+bb8-redis = "0.26"
+
+# Auth & Crypto
+jsonwebtoken = "9"
+chrono = { workspace = true }
+ed25519-dalek = "2"
+sha2 = "0.10"
+aes-gcm = "0.10"
+rand = "0.8"
+hex = "0.4"
+
+# HTTP Client
+reqwest = { version = "0.12", features = ["json"] }
+redis = "0.26"
+semver = "1.0"
+
+# Internal
+shared = { path = "../shared" }
 
 # System
 tokio = { workspace = true }
 anyhow = { workspace = true }
 dotenv = { workspace = true }
 uuid = { workspace = true, features = ["serde"] }
+base64 = "0.22"

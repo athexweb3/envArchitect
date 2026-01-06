@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use std::collections::HashMap;
 
+// TUF metadata structures - used for serialization
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct SignedMetadata<T> {
     pub signatures: Vec<SignatureObj>,
@@ -17,6 +19,7 @@ pub struct SignatureObj {
     pub sig: String,
 }
 
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct Root {
     pub _type: String,
@@ -27,6 +30,7 @@ pub struct Root {
     pub roles: HashMap<String, Role>,
 }
 
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct Key {
     pub keytype: String, // "ed25519"
@@ -34,11 +38,13 @@ pub struct Key {
     pub keyval: KeyVal,
 }
 
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct KeyVal {
     pub public: String,
 }
 
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize)]
 pub struct Role {
     pub keyids: Vec<String>,
@@ -134,6 +140,7 @@ impl TufService {
         let targets = Targets {
             _type: "targets".to_string(),
             spec_version: "1.0".to_string(),
+            version: 1,
             // TUF requires strictly increasing versions.
             expires: Utc::now() + chrono::Duration::days(1),
             targets: targets_map,
@@ -211,8 +218,9 @@ impl TufService {
     }
 
     pub fn sign<T: Serialize>(&self, data: T) -> SignedMetadata<T> {
-        let sig = self.signing_key.sign(&json_bytes);
-        let sig_base64 = general_purpose::STANDARD.encode(sig.to_bytes());
+        let json_bytes = serde_json::to_vec(&data).unwrap();
+        let signature_bytes = self.signing_key.sign(&json_bytes);
+        let sig_base64 = general_purpose::STANDARD.encode(signature_bytes.to_bytes());
 
         SignedMetadata {
             signatures: vec![SignatureObj {

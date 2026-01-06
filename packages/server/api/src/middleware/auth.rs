@@ -14,6 +14,7 @@ use tower_sessions::Session;
 #[derive(Clone, Debug)]
 pub struct AuthUser(pub User);
 
+#[allow(dead_code)] // Will be wired when API key auth is implemented
 pub async fn auth_middleware(
     State(state): State<AppState>,
     session: Session,

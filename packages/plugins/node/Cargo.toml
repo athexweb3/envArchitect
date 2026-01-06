@@ -1,10 +1,13 @@
 [package]
 name = "env-plugin-node"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib"]
+
+[package.metadata.plugin]
+capabilities = ["env-read", "sys-exec"]
 
 [dependencies]
 env-architect-sdk = { path = "../../sdks/rust/crates/sdk" }

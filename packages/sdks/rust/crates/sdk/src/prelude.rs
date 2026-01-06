@@ -9,6 +9,7 @@ pub use crate::api::types::{InstallPlan, PackageMetadata};
 pub use crate::contract::reexports::*;
 
 // Common external constants/types
+pub use crate::plugin;
 pub use anyhow::{Context, Result};
 pub use async_trait::async_trait;
 pub use std::collections::HashMap;

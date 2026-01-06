@@ -10,6 +10,7 @@ pub struct Notary {
 pub mod jobs;
 pub mod processors;
 pub mod scanners;
+pub mod services;
 pub mod tasks;
 
 impl Notary {

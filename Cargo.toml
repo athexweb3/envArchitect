@@ -22,8 +22,8 @@ debug = 1 # Line tables only - significantly reduces disk usage compared to full
 incremental = true
 
 [profile.release]
-strip = true # Strip symbols from release binaries
-lto = true # Enable Link Time Optimization
+strip = false # Strip symbols from release binaries
+lto = false # Enable Link Time Optimization
 codegen-units = 1 # Maximize optimization at the cost of compile time
 
 [workspace.package]
@@ -70,12 +70,8 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 uuid = { version = "1.7", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 semver = { version = "1.0.24", features = ["serde"] }
-wit-bindgen = { version = "0.36.0", features = ["realloc"] }
+wit-bindgen = { version = "0.41.0", features = ["realloc"] }
 sigstore = "0.8" # For future phase
 petgraph = "0.8" # For dependency engine
 dotenv = "0.15"
-semver = { version = "1.0", features = ["serde"] }
-syn = "2.0"
-quote = "1.0"
-proc-macro2 = "1.0"
-wit-bindgen = { version = "0.36.0", features = ["realloc"] }
+
