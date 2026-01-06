@@ -6,7 +6,7 @@ use serde_json::Value;
 struct NodePlugin;
 
 #[async_trait]
-impl Plugin for NodePlugin {
+impl PluginHandler for NodePlugin {
     async fn resolve(&self, _context: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
         let mut plan = InstallPlan::default();
 

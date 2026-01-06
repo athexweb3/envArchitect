@@ -8,7 +8,8 @@ pub fn find_and_load_manifest(start_dir: &Path) -> Result<(PathBuf, EnhancedMani
     // Discovery Order:
 
     use crate::constants::MANIFEST_JSON;
-    let candidates = vec![MANIFEST_JSON];
+    use crate::constants::MANIFEST_JSON;
+    let candidates = vec![MANIFEST_JSON, "env.toml", "env.yaml"];
 
     for filename in candidates {
         let path = start_dir.join(filename);
@@ -32,6 +33,10 @@ pub fn load_manifest(path: &Path) -> Result<EnhancedManifest> {
 
     match ext {
         "json" => serde_json::from_str(&content).with_context(|| "Failed to parse JSON manifest"),
+        "toml" => toml::from_str(&content).with_context(|| "Failed to parse TOML manifest"),
+        "yaml" | "yml" => {
+            serde_yaml::from_str(&content).with_context(|| "Failed to parse YAML manifest")
+        }
         _ => anyhow::bail!("Unsupported manifest format: {}", ext),
     }
 }

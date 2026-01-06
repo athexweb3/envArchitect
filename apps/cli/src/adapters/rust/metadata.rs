@@ -4,10 +4,7 @@ use std::path::Path;
 
 pub fn extract_metadata(dir: &Path) -> Result<PluginMetadata> {
     // Use cargo metadata to avoid parsing TOML manually
-    println!(
-        "cargo metadata --no-deps --format-version 1 --manifest-path {}",
-        dir.join("Cargo.toml").display()
-    );
+
     let output = std::process::Command::new("cargo")
         .arg("metadata")
         .arg("--no-deps")
@@ -36,19 +33,28 @@ pub fn extract_metadata(dir: &Path) -> Result<PluginMetadata> {
     let packages = json.get("packages").and_then(|v| v.as_array());
 
     let pkg = if let Some(pkgs) = packages {
-        if let Some(first) = pkgs.first() {
-            first
-        } else {
-            return Ok(PluginMetadata {
-                name: "unknown".to_string(),
-                version: "0.0.0".to_string(),
-                description: None,
-                authors: None,
-                license: None,
-                repository: None,
-                capabilities: None,
-            });
-        }
+        // Filter for the package that corresponds to the directory we are in (by manifest_path)
+        let target_manifest = dir.join("Cargo.toml");
+        pkgs.iter()
+            .find(|p| {
+                p.get("manifest_path")
+                    .and_then(|s| s.as_str())
+                    .map(Path::new)
+                    .map(|p| p == target_manifest)
+                    .unwrap_or(false)
+            })
+            .or(pkgs.first()) // Fallback to first if not found (e.g. workspace root)
+            .unwrap_or(
+                return Ok(PluginMetadata {
+                    name: "unknown".to_string(),
+                    version: "0.0.0".to_string(),
+                    description: None,
+                    authors: None,
+                    license: None,
+                    repository: None,
+                    capabilities: None,
+                }),
+            )
     } else {
         return Ok(PluginMetadata {
             name: "unknown".to_string(),

@@ -25,10 +25,10 @@
 //! ```rust,no_run
 //! use env_architect_sdk::prelude::*;
 //!
-//! struct MyPlugin;
 //!
-//! #[async_trait]
-//! impl PluginHandler for MyPlugin {
+//! // Register the plugin
+//! #[plugin]
+//! struct MyPlugin;
 //!     async fn resolve(&self, ctx: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
 //!         // 1. Build the manifest using the Fluent Builder
 //!         let manifest = EnvBuilder::from_context(ctx)?
@@ -40,8 +40,6 @@
 //!     }
 //! }
 //!
-//! // Register the plugin
-//! plugin!(MyPlugin);
 //! ```
 
 pub mod api;

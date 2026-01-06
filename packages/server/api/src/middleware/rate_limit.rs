@@ -54,7 +54,7 @@ pub async fn rate_limit_middleware(
         Ok(false) => (StatusCode::TOO_MANY_REQUESTS, "Rate limit exceeded").into_response(),
         Err(e) => {
             tracing::error!("Rate limit redis error: {}", e);
-            // Fail open? or Fail closed?
+
             // For V1 Security, let's Fail Open to avoid downtime if Redis blips,
             // BUT log heavily.
             next.run(req).await
@@ -78,7 +78,7 @@ fn identify_client(req: &Request<Body>) -> (String, u32, u32) {
     }
 
     // Fallback: IP Address
-    // We assume behind proxy, so X-Forwarded-For?
+
     // Axum `ConnectInfo` is tricky behind load balancers without correct config.
     // For MVP, we stick to a placeholder or simple extraction.
     // Real implementation would use `axum_client_ip`.

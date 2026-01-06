@@ -3,6 +3,8 @@ use serde_json::Value;
 
 /// A basic example of an EnvArchitect plugin.
 /// This plugin simulates installing a tool called "hello-world".
+// Register the plugin entry point
+#[plugin]
 struct BasicPlugin;
 
 #[async_trait]
@@ -54,10 +56,4 @@ impl PluginHandler for BasicPlugin {
     }
 }
 
-// Register the plugin entry point
-plugin!(BasicPlugin);
 
-fn main() {
-    // This main function is just for the example to compile as a binary.
-    // The macro generates the actual entry point used by the Wasm host.
-}

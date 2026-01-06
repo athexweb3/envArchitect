@@ -140,7 +140,7 @@ async fn componentize(dir: &Path, wasm_path: &Path) -> Result<PathBuf> {
     };
 
     // Find WIT
-    let wit_path = find_wit_path(dir);
+    let wit_path = find_wit_path(dir)?;
 
     // Embed WIT
     let embedded_path = wasm_path.with_extension("embed.wasm");
@@ -184,22 +184,24 @@ async fn componentize(dir: &Path, wasm_path: &Path) -> Result<PathBuf> {
     Ok(component_path)
 }
 
-fn find_wit_path(dir: &Path) -> PathBuf {
+fn find_wit_path(dir: &Path) -> Result<PathBuf> {
     let candidates = [
+        dir.join("wit/plugin.wit"), // Local project wit
+        dir.join("plugin.wit"),
+        // Workspace relative paths
         dir.join("packages/sdks/wit/plugin.wit"),
         dir.join("../packages/sdks/wit/plugin.wit"),
         dir.join("../../packages/sdks/wit/plugin.wit"),
         dir.join("../../../packages/sdks/wit/plugin.wit"),
-        // Workspace root assumption
-        PathBuf::from("packages/sdks/wit/plugin.wit"),
+        // Absolute fallback from current dir
+        std::env::current_dir().unwrap_or_default().join("packages/sdks/wit/plugin.wit"),
     ];
 
     for p in &candidates {
         if p.exists() {
-            return p.clone();
+            return Ok(p.clone());
         }
     }
 
-    // Fallback
-    PathBuf::from("packages/sdks/wit/plugin.wit")
+    anyhow::bail!("Could not find 'plugin.wit' file in any expected location. Please ensure the SDK is properly installed or the file exists.")
 }

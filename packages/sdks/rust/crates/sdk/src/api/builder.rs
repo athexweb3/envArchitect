@@ -13,8 +13,10 @@ use semver::{Version, VersionReq};
 /// ```rust
 /// use env_architect_sdk::EnvBuilder;
 ///
+/// // Prefer loading from context:
+/// // let manifest = EnvBuilder::from_context(&context)?;
+///
 /// let manifest = EnvBuilder::new()
-///     .project("my-project", "0.1.0")
 ///     .add_dependency("node", "18.x")
 ///     .build();
 /// ```
@@ -32,15 +34,25 @@ impl EnvBuilder {
 
     /// Automatically loads configuration from `env.json` in the project root.
     ///
-    /// This attempts to read `env.json` relative to the `project_root` in the context.
-    /// If successful, it populates the builder with project metadata.
+    /// Automatically loads configuration from the context or `env.json`.
+    ///
+    /// This prefers the `configuration` object passed by the host (which supports `env.toml`, `env.json`, etc.).
+    /// If missing, it attempts to read `env.json` relative to the `project_root`.
     pub fn from_context(context: &crate::api::context::ResolutionContext) -> anyhow::Result<Self> {
         use crate::api::host;
         use std::path::PathBuf;
 
         let mut builder = Self::new();
-        let root = PathBuf::from(&context.project_root);
 
+        // 1. Try to use configuration passed by Host (Preferred)
+        if let Some(config) = &context.configuration {
+            host::debug("Loading configuration from host context...");
+            Self::populate_from_json(&mut builder, config);
+            return Ok(builder);
+        }
+
+        // 2. Fallback: Read env.json manually (Legacy/Test mode)
+        let root = PathBuf::from(&context.project_root);
         let env_path = root.join("env.json");
         host::debug(format!(
             "Attempting to auto-load config from: {}",
@@ -50,27 +62,7 @@ impl EnvBuilder {
         match host::read_file(env_path.to_string_lossy().into_owned()) {
             Ok(content) => {
                 let json: serde_json::Value = serde_json::from_str(&content)?;
-
-                if let Some(proj) = json.get("project") {
-                    if let Some(n) = proj.get("name").and_then(|v| v.as_str()) {
-                        builder.manifest.project.name = n.to_string();
-                    }
-                    if let Some(v) = proj.get("version").and_then(|v| v.as_str()) {
-                        if let Ok(ver) = Version::parse(v) {
-                            builder.manifest.project.version = ver;
-                        }
-                    }
-                    if let Some(d) = proj.get("description").and_then(|v| v.as_str()) {
-                        builder.manifest.project.description = d.to_string();
-                    }
-                    if let Some(authors) = proj.get("authors").and_then(|v| v.as_array()) {
-                        builder.manifest.project.authors = authors
-                            .iter()
-                            .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                            .collect();
-                    }
-                }
-
+                Self::populate_from_json(&mut builder, &json);
                 Ok(builder)
             }
             Err(e) => {
@@ -80,7 +72,36 @@ impl EnvBuilder {
         }
     }
 
+    fn populate_from_json(builder: &mut Self, json: &serde_json::Value) {
+        if let Some(proj) = json.get("project") {
+            if let Some(n) = proj.get("name").and_then(|v| v.as_str()) {
+                builder.manifest.project.name = n.to_string();
+            }
+            if let Some(v) = proj.get("version").and_then(|v| v.as_str()) {
+                if let Ok(ver) = Version::parse(v) {
+                    builder.manifest.project.version = ver;
+                }
+            }
+            if let Some(d) = proj.get("description").and_then(|v| v.as_str()) {
+                builder.manifest.project.description = d.to_string();
+            }
+            if let Some(authors) = proj.get("authors").and_then(|v| v.as_array()) {
+                builder.manifest.project.authors = authors
+                    .iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect();
+            }
+        }
+    }
+
     /// Sets the project metadata (name and version).
+    ///
+    /// # Deprecated
+    /// This method violates the "Manifest Source of Truth" principle.
+    /// Project metadata should be defined in `env.json` or `env.toml` and loaded via `from_context`.
+    #[deprecated(
+        note = "Define project metadata in env.json and load with EnvBuilder::from_context()"
+    )]
     pub fn project(mut self, name: &str, version: &str) -> Self {
         self.manifest.project.name = name.to_string();
         self.manifest.project.version = Version::parse(version).expect("Invalid SemVer version");

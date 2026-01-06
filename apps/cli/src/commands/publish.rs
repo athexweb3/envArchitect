@@ -455,6 +455,7 @@ impl PublishCommand {
             );
         }
 
+
         let res: reqwest::Response = client
             .post(format!("{}/v1/publish", api_url))
             .header("Authorization", format!("Bearer {}", access_token))

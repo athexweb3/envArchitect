@@ -4,8 +4,8 @@ members = [
     "apps/cli",
     "packages/server/worker",
     "packages/server/api",
-    "packages/sdks/rust/sdk",
-    "packages/sdks/rust/macros",
+    "packages/sdks/rust/crates/sdk",
+    "packages/sdks/rust/crates/macros",
     "examples/feature-stress-plugin",
     "packages/manifest",
     "packages/server/database",
@@ -13,7 +13,18 @@ members = [
     "packages/plugins/doctor",
     "packages/plugins/node",
     "packages/plugins/python",
+    "packages/env-lsp",
 ]
+
+# Optimize profiles to reduce target directory size
+[profile.dev]
+debug = 1 # Line tables only - significantly reduces disk usage compared to full debug info
+incremental = true
+
+[profile.release]
+strip = true # Strip symbols from release binaries
+lto = true # Enable Link Time Optimization
+codegen-units = 1 # Maximize optimization at the cost of compile time
 
 [workspace.package]
 version = "0.1.0"
@@ -58,6 +69,13 @@ tracing-subscriber = "0.3"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 uuid = { version = "1.7", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+semver = { version = "1.0.24", features = ["serde"] }
+wit-bindgen = { version = "0.36.0", features = ["realloc"] }
 sigstore = "0.8" # For future phase
 petgraph = "0.8" # For dependency engine
 dotenv = "0.15"
+semver = { version = "1.0", features = ["serde"] }
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
+wit-bindgen = { version = "0.36.0", features = ["realloc"] }

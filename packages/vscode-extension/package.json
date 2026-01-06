@@ -1,7 +1,7 @@
 {
 	"name": "@env-architect/vscode-extension",
 	"displayName": "EnvArchitect",
-	"description": "Language support for EnvArchitect (env.toml, env.json)",
+	"description": "Language support for EnvArchitect (env.json)",
 	"version": "0.1.0",
 	"publisher": "env-architect",
 	"author": "athexweb3 <athexweb3@gmail.com>",
@@ -13,20 +13,6 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"languages": [
-			{
-				"id": "env-toml",
-				"aliases": [
-					"EnvArchitect Manifest",
-					"env-toml"
-				],
-				"filenames": [
-					"env.toml",
-					"plugin.toml"
-				],
-				"configuration": "./language-configuration.json"
-			}
-		],
 		"commands": [
 			{
 				"command": "env-architect.restartServer",
@@ -35,14 +21,17 @@
 		],
 		"jsonValidation": [
 			{
-				"fileMatch": "env.json",
-				"url": "./schemas/env-schema.json"
+				"fileMatch": [
+					"env.json",
+					"plugin.json"
+				],
+				"url": "https://raw.githubusercontent.com/athexweb3/envArchitect/refs/heads/main/packages/manifest/schema.json"
 			}
 		]
 	},
 	"activationEvents": [
-		"workspaceContains:**/env.toml",
-		"workspaceContains:**/env.json"
+		"workspaceContains:**/env.json",
+		"workspaceContains:**/plugin.json"
 	],
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

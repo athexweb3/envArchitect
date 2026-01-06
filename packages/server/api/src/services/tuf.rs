@@ -94,10 +94,6 @@ pub struct TufService {
 
 impl TufService {
     pub fn new(db: Pool<Postgres>, _signing_key_pem: &str) -> Self {
-        // Simple simplified key loading
-        // In prod, use proper PEM parsing or hex
-        // Assuming hex for MVP simplicity or ed25519-dalek PEM
-        // using a placeholder for now if parsing fails to avoid crash
         let signing_key = SigningKey::from_bytes(&[0u8; 32]); // TODO: Real key load
 
         Self {
@@ -139,13 +135,6 @@ impl TufService {
             _type: "targets".to_string(),
             spec_version: "1.0".to_string(),
             // TUF requires strictly increasing versions.
-            // We might need a `tuf_metadata` table to track versions.
-            // For MVP, allow "1" and rely on Snapshot/Timestamp to drive updates?
-            // Actually, clients check version.
-            // Unix timestamp as version? (Not strict int32 compliant if too big, but usually i32).
-            // Let's use Utc::now().timestamp() as version if it fits?
-            // Standard says integer.
-            version: (Utc::now().timestamp() % 2147483647) as i32, // Hack for MVP
             expires: Utc::now() + chrono::Duration::days(1),
             targets: targets_map,
         };
@@ -222,11 +211,6 @@ impl TufService {
     }
 
     pub fn sign<T: Serialize>(&self, data: T) -> SignedMetadata<T> {
-        let json_bytes = serde_json::to_vec(&data).unwrap(); // Canonical JSON needed?
-                                                             // TUF uses "Canonical JSON". Serde default is NOT canonical.
-                                                             // But many clients accept standard JSON if hash matches.
-                                                             // For MVP, use standard.
-
         let sig = self.signing_key.sign(&json_bytes);
         let sig_base64 = general_purpose::STANDARD.encode(sig.to_bytes());
 

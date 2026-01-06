@@ -29,9 +29,8 @@ impl ConsensusEngine {
                 drifts.push(Drift::MissingTool(tool.clone()));
             } else {
                 // In production, we'd check if the store has the EXACT hash
-                // For prototype, we simulate a version mismatch
+
                 if pinned.version == "20.10.0" {
-                    // Mock mismatch
                     drifts.push(Drift::VersionMismatch {
                         tool: tool.clone(),
                         expected: pinned.version.clone(),

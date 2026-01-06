@@ -37,13 +37,28 @@ world plugin {
 
     /// 2. Dependency Resolution
     /// The core hook: transforms current context into an execution plan.
-    export resolve: func(context-json: string) -> result<resolution-output, string>;
+    export resolve: func(context: resolution-context) -> result<resolution-output, string>;
 
     /// 3. Side Effects (Optional)
     /// Performs actual system changes (e.g., creating symlinks, downloading binaries).
     export install: func(context: installation-context) -> result<_, string>;
 
+    record resolution-context {
+        target-os: string,
+        target-arch: string,
+        project-root: string,
+        /// JSON-encoded map of environment variables
+        env-vars-json: string,
+        /// JSON-encoded map of system tools
+        system-tools-json: string,
+        /// JSON-encoded configuration object
+        configuration-json: string,
+        /// JSON-encoded list of allowed capabilities
+        allowed-capabilities-json: string
+    }
+
     record resolution-output {
+        /// JSON-encoded InstallPlan
         plan-json: string,
         state: option<string>
     }

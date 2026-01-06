@@ -17,4 +17,8 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 dotenv = { workspace = true }
 serde_json = { workspace = true }
+uuid.workspace = true
+serde.workspace = true
+wasmparser = "0.243.0"
+sqlx.workspace = true
 # sigstore = "0.8" # Will rely on workspace later

@@ -44,7 +44,6 @@ impl InstallService {
 
     /// Install from a full environment manifest
     pub async fn install_from_manifest(&mut self, manifest: EnhancedManifest) -> Result<()> {
-        // 2. Populate Registry (Mock) & Resolve
         let mut resolved = Vec::new();
 
         for (name, _spec) in &manifest.dependencies {
@@ -91,20 +90,16 @@ impl InstallService {
     pub async fn install(&mut self, plugin_name: &str) -> Result<()> {
         println!("Resolving dependencies for '{}'...", plugin_name);
 
-        // Step 1: Fetch available versions from registry (mock for now)
         // In production, this would query the registry API
         self.populate_registry_mock(plugin_name)?;
 
-        // Step 2: SAT Solve
         self.sat_engine.load_registry();
 
-        // For now, we'll do a simplified resolution
         // In production, this would use resolvo's full solver
         let resolved = self.simple_resolve(plugin_name)?;
 
         println!("✅ Resolved {} packages", resolved.len());
 
-        // Step 3: Build Execution DAG for parallel installs
         let mut dag = ExecutionDag::new();
         for pkg in &resolved {
             dag.add_node(&pkg.name);
@@ -115,7 +110,6 @@ impl InstallService {
 
         let batches = dag.resolve_batched().context("Dependency cycle detected")?;
 
-        // Step 4: Download + Verify + Execute each batch
         for (_batch_idx, batch) in batches.iter().enumerate() {
             for plugin_name in batch {
                 self.install_single(plugin_name).await?;
@@ -207,7 +201,6 @@ impl InstallService {
         Ok(resolved)
     }
 
-    /// Mock registry population (in production, this fetches from API)
     fn populate_registry_mock(&mut self, plugin_name: &str) -> Result<()> {
         use semver::Version;
         use std::collections::HashMap;

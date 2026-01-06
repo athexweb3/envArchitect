@@ -33,23 +33,12 @@ impl SearchEngine {
             return Ok(vec![]);
         }
 
-        // 1. Generate Embedding (CPU intensive, spawn blocking?)
-        // For now, simple call. In prod, move to task::spawn_blocking.
         let embedding = self.embedder.generate(q)?;
-        // pgvector requires Vector type or simply &[f32] for bind?
+
         // sqlx-pgvector maps Vec<f32> automatically if feature enabled.
 
         let limit = limit.min(50);
 
-        // 2. Hybrid Query
-        // We use a CTE to combine:
-        // A. Semantic Rank (1 - cosine_distance)
-        // B. Keyword Rank (ts_rank)
-        // C. Signals (Popularity, Quality, etc)
-        //
-        // Final Score = (0.3 * Keyword) + (0.3 * Vector) + (0.4 * Signals)
-
-        // Using runtime query_as instead of macro to bypass type inference issues with vectors
         let results = sqlx::query_as::<_, SearchResult>(
             r#"
             WITH vector_scores AS (
