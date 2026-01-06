@@ -13,7 +13,7 @@ impl GlobalStateService {
     pub fn new() -> Result<Self> {
         let home = dirs::home_dir().context("Could not find home directory")?;
         let config_dir = home.join(".env-architect");
-        let manifest_path = config_dir.join("global.env.toml");
+        let manifest_path = config_dir.join("global.env.json");
 
         if !config_dir.exists() {
             fs::create_dir_all(&config_dir).context("Failed to create config dir")?;
@@ -31,13 +31,13 @@ impl GlobalStateService {
         let content =
             fs::read_to_string(&self.manifest_path).context("Failed to read global manifest")?;
 
-        toml::from_str(&content).context("Failed to parse global manifest")
+        serde_json::from_str(&content).context("Failed to parse global manifest")
     }
 
     /// Save the global manifest to disk.
     pub fn save(&self, manifest: &GlobalManifest) -> Result<()> {
-        let content =
-            toml::to_string_pretty(manifest).context("Failed to serialize global manifest")?;
+        let content = serde_json::to_string_pretty(manifest)
+            .context("Failed to serialize global manifest")?;
 
         fs::write(&self.manifest_path, content).context("Failed to write global manifest")?;
 

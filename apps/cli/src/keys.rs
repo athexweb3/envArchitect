@@ -1,3 +1,4 @@
+#![allow(unused)]
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose, Engine as _};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
@@ -13,7 +14,6 @@ pub fn generate_or_load_signing_key() -> Result<SigningKey> {
     let entry =
         Entry::new(KEYRING_SERVICE, KEYRING_USER).context("Failed to access OS Keychain")?;
 
-    // 1. Try Keyring
     if let Ok(secret) = entry.get_password() {
         if let Ok(bytes) = general_purpose::STANDARD.decode(&secret) {
             let bytes: Vec<u8> = bytes; // Explicit type check fallback
@@ -25,7 +25,6 @@ pub fn generate_or_load_signing_key() -> Result<SigningKey> {
         }
     }
 
-    // 2. Try File Fallback (~/.config/env-architect/signing-key)
     let home = dirs::home_dir().context("Could not find home directory")?;
     let key_path = home
         .join(".config")
@@ -44,10 +43,9 @@ pub fn generate_or_load_signing_key() -> Result<SigningKey> {
         }
     }
 
-    // 3. Generate new key
     let signing_key = SigningKey::generate(&mut OsRng);
     let secret = general_purpose::STANDARD.encode(signing_key.to_bytes());
-    // Try to save to keyring (non-fatal if it fails)
+
     let _ = entry.set_password(&secret);
 
     // Save to file fallback
@@ -122,7 +120,6 @@ mod tests {
         let key1 = generate_or_load_signing_key().unwrap();
         let key2 = generate_or_load_signing_key().unwrap();
 
-        // Should be idempotent
         assert_eq!(key1.to_bytes(), key2.to_bytes());
     }
 
