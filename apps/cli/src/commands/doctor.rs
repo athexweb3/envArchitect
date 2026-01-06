@@ -23,9 +23,27 @@ impl DoctorCommand {
             .clone()
             .unwrap_or_else(|| std::env::current_dir().unwrap_or(std::path::PathBuf::from(".")));
 
-        let absolute_root = std::fs::canonicalize(&root).unwrap_or(root);
+        let absolute_root = std::fs::canonicalize(&root).unwrap_or(root.clone());
 
-        // 1. Configure Wasmtime
+        if let Ok(adapter) = crate::adapters::get_adapter(&absolute_root) {
+            cliclack::log::info(format!(
+                "Checking toolchain for language: {}",
+                adapter.name()
+            ))?;
+            match adapter.check_health().await {
+                Ok(_) => {
+                    cliclack::log::success(format!("Toolchain for {} is healthy.", adapter.name()))?
+                }
+                Err(e) => {
+                    cliclack::log::error(format!("Toolchain issues: {}", e))?;
+                }
+            }
+        } else {
+            cliclack::log::warning(
+                "No supported project language detected. Skipping toolchain check.",
+            )?;
+        }
+
         let mut config = Config::new();
         config.wasm_component_model(true);
         config.async_support(true);
@@ -33,11 +51,9 @@ impl DoctorCommand {
         let engine = Engine::new(&config)?;
         let mut linker: Linker<HostState> = Linker::new(&engine);
 
-        // 2. Link Host Capabilities
         wasmtime_wasi::add_to_linker_async(&mut linker)?;
         crate::host::bindings::Plugin::add_to_linker(&mut linker, |state: &mut HostState| state)?;
 
-        // 3. Initialize Host State
         // For Doctor, we grant all read-only capabilities by default + exec
         // We want it to be powerful enough to check everything.
         let allowed_caps = vec![
@@ -50,40 +66,40 @@ impl DoctorCommand {
         let host_state = HostState::new(allowed_caps, None, None);
         let mut store = Store::new(&engine, host_state);
 
-        // 4. Load Embedded Component
         // EMBEDDING THE DOCTOR PLUGIN HERE
         // Relative to this file: apps/cli/src/commands/doctor.rs
         // We need to go up to root: ../../../../
-        const DOCTOR_WASM: &[u8] =
-            include_bytes!("../../../../target/wasm32-wasip1/debug/env_plugin_doctor.wasm");
+        // const DOCTOR_WASM: &[u8] =
+        //     include_bytes!("../../../../target/wasm32-wasip1/debug/env_plugin_doctor.wasm");
+        const DOCTOR_WASM: &[u8] = &[]; // TODO: Restore when doctor plugin is built
+
+        if DOCTOR_WASM.is_empty() {
+            cliclack::log::warning("Doctor plugin not built. Skipping Wasm diagnostics.")?;
+            return Ok(());
+        }
 
         let component = Component::new(&engine, DOCTOR_WASM)?;
         let plugin = Plugin::instantiate_async(&mut store, &component, &linker).await?;
 
-        // 5. Execute Validation
         // We use the 'validate' hook or 'resolve' hook. Doctor is currently wired to print on 'resolve'.
-        // Let's call verify/resolve.
 
-        let context = serde_json::json!({
-            "target_os": std::env::consts::OS,
-            "target_arch": std::env::consts::ARCH,
-            "project_root": absolute_root.to_string_lossy(),
-            "env_vars": {},
-            "allowed_capabilities": [
-                { "fs-read": ["/"] },
-                { "sys-exec": ["*"] },
-                "ui-interact"
-            ],
-            "parent_manifest": null,
-            "system_tools": {}
-        });
+        let allowed_caps_json = serde_json::to_string(&vec![
+            serde_json::json!({ "fs-read": ["/"] }),
+            serde_json::json!({ "sys-exec": ["*"] }),
+            serde_json::json!("ui-interact"),
+        ])?;
 
-        // Ignoring output plan, just running for side-effects (diagnostics printing)
-        // Ignoring output plan, just running for side-effects (diagnostics printing)
-        match plugin
-            .call_resolve(&mut store, &context.to_string())
-            .await?
-        {
+        let context = crate::host::bindings::ResolutionContext {
+            target_os: std::env::consts::OS.to_string(),
+            target_arch: std::env::consts::ARCH.to_string(),
+            project_root: absolute_root.to_string_lossy().to_string(),
+            env_vars_json: "{}".to_string(),
+            system_tools_json: "{}".to_string(),
+            configuration_json: "{}".to_string(),
+            allowed_capabilities_json: allowed_caps_json,
+        };
+
+        match plugin.call_resolve(&mut store, &context).await? {
             Ok(_) => {
                 cliclack::log::success("Diagnostics Complete.")?;
             }

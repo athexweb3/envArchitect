@@ -3,7 +3,6 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-// OCI Imports
 use oci_client::client::ImageLayer;
 use oci_client::manifest::{OciDescriptor, OciImageManifest};
 use oci_client::{secrets::RegistryAuth, Client, Reference};
@@ -45,6 +44,7 @@ struct MetadataFile {
     repository: Option<String>,
 }
 
+#[allow(unused)]
 impl PublishCommand {
     pub async fn execute(&self) -> Result<()> {
         // Delegate to BundleCommand
@@ -57,29 +57,22 @@ impl PublishCommand {
         let bundle_dir = bundle_cmd.execute().await?;
 
         if self.dry_run {
-            // BundleCommand already prints "Bundle complete", so we just exit.
             return Ok(());
         }
 
-        // Start Publishing Logic
         cliclack::intro("EnvArchitect Publish")?;
 
-        // 0. Load EnvArchitect Access Token
         let access_token = self.get_access_token()?;
 
-        // 0.5 Fetch User Profile
         let user = self.get_user_profile(&access_token).await?;
         let username = user.username;
 
-        // 0.6 Extract package name
         let package_name = self.get_package_name(&self.path)?;
 
-        // 1. Read Metadata
         let meta_path = bundle_dir.join("metadata.json");
         let content = std::fs::read_to_string(&meta_path)?;
         let meta: MetadataFile = serde_json::from_str(&content)?;
 
-        // 2. Fetch GHCR token if needed
         let mut ghcr_token = if let Ok(t) = std::env::var("GITHUB_TOKEN") {
             Some(t)
         } else {
@@ -144,7 +137,6 @@ impl PublishCommand {
             ghcr_token = Some(pat);
         }
 
-        // 2. Publish to OCI Registry (GHCR)
         let oci_ref = self
             .publish_to_registry(
                 &username,
@@ -157,7 +149,6 @@ impl PublishCommand {
             )
             .await?;
 
-        // 3. Sync with API
         self.upload_to_api(
             &package_name,
             &bundle_dir,
@@ -183,22 +174,21 @@ impl PublishCommand {
         match entry.get_password() {
             Ok(t) => Ok(t),
             Err(_) => {
-                // Fallback to hosts.toml
                 let home = dirs::home_dir().context("Could not find home directory")?;
                 let hosts_path = home
                     .join(".config")
                     .join("env-architect")
-                    .join("hosts.toml");
+                    .join("hosts.json");
 
                 if hosts_path.exists() {
                     let content = std::fs::read_to_string(&hosts_path)?;
-                    let hosts: toml::Value = content.parse()?;
+                    let hosts: serde_json::Value = serde_json::from_str(&content)?;
                     hosts
                         .get(domain)
                         .and_then(|h| h.get("oauth_token"))
                         .and_then(|t| t.as_str())
                         .map(|s| s.to_string())
-                        .context("No access token found in hosts.toml")
+                        .context("No access token found in hosts.json")
                 } else {
                     Err(anyhow::anyhow!("Not logged in. Please run 'env login'"))
                 }
@@ -212,13 +202,14 @@ impl PublishCommand {
         } else {
             path
         };
-        // Priority: env.toml -> Cargo.toml
-        let env_toml = dir.join("env.toml");
-        if env_toml.exists() {
-            let content = std::fs::read_to_string(&env_toml)?;
-            let val = content.parse::<toml::Value>()?;
+
+        use crate::constants::MANIFEST_JSON;
+        let env_json = dir.join(MANIFEST_JSON);
+        if env_json.exists() {
+            let content = std::fs::read_to_string(&env_json)?;
+            let val: serde_json::Value = serde_json::from_str(&content)?;
             if let Some(n) = val
-                .get("package")
+                .get("project") // 'project' in json, 'package' in toml usually but schema says project
                 .and_then(|p| p.get("name"))
                 .and_then(|s| s.as_str())
             {
@@ -226,14 +217,18 @@ impl PublishCommand {
             }
         }
 
-        let content = std::fs::read_to_string(dir.join("Cargo.toml"))?;
-        let val = content.parse::<toml::Value>()?;
-        Ok(val
-            .get("package")
-            .and_then(|p| p.get("name"))
-            .and_then(|n| n.as_str())
-            .unwrap()
-            .to_string())
+        let pkg_json = dir.join("package.json");
+        if pkg_json.exists() {
+            let content = std::fs::read_to_string(&pkg_json)?;
+            let val: serde_json::Value = serde_json::from_str(&content)?;
+            if let Some(n) = val.get("name").and_then(|s| s.as_str()) {
+                return Ok(n.to_string());
+            }
+        }
+
+        Err(anyhow::anyhow!(
+            "Could not find package name in env.json or package.json"
+        ))
     }
 
     async fn publish_to_registry(
@@ -298,7 +293,6 @@ impl PublishCommand {
 
         let annotations_map = Some(annotations.clone());
 
-        // Helper to calculate descriptor
         fn calculate_descriptor(
             media_type: String,
             data: &[u8],
@@ -315,7 +309,6 @@ impl PublishCommand {
             }
         }
 
-        // Prepare Config
         let config_data = b"{}";
         let config_desc = calculate_descriptor(
             "application/vnd.wasm.config.v0+json".to_string(),
@@ -323,11 +316,9 @@ impl PublishCommand {
             annotations_map.clone(),
         );
 
-        // Prepare Layers & Descriptors
         let mut layers_data = Vec::new();
         let mut layers_desc = Vec::new();
 
-        // 1. Wasm Layer
         let wasm_path = bundle_dir.join("artifact.wasm");
         let wasm_data = std::fs::read(&wasm_path).context("Failed to read artifact.wasm")?;
         let wasm_desc = calculate_descriptor(
@@ -343,7 +334,6 @@ impl PublishCommand {
         });
         layers_desc.push(wasm_desc);
 
-        // 2. Metadata Layer
         let meta_path = bundle_dir.join("metadata.json");
         let meta_data = std::fs::read(&meta_path).context("Failed to read metadata.json")?;
         let meta_desc = calculate_descriptor(
@@ -359,7 +349,6 @@ impl PublishCommand {
         });
         layers_desc.push(meta_desc);
 
-        // 3. SBOM Layer (Optional)
         let sbom_path = bundle_dir.join("sbom.spdx.json");
         if sbom_path.exists() {
             let sbom_data = std::fs::read(&sbom_path)?;
@@ -377,7 +366,6 @@ impl PublishCommand {
             layers_desc.push(sbom_desc);
         }
 
-        // Construct Manifest explicitly to ensure annotations are present at the top level
         let manifest = OciImageManifest {
             schema_version: 2,
             media_type: Some("application/vnd.oci.image.manifest.v1+json".to_string()),
@@ -387,7 +375,6 @@ impl PublishCommand {
             artifact_type: None,
         };
 
-        // Prepare Config for Client (legacy struct)
         let config = oci_client::client::Config {
             data: config_data.to_vec(),
             media_type: "application/vnd.wasm.config.v0+json".to_string(),
@@ -418,7 +405,6 @@ impl PublishCommand {
 
         cliclack::log::step("Preparing upload to registry...")?;
 
-        // 1. Load Signing Key and Sign Artifact
         let signing_key = generate_or_load_signing_key()
             .context("Failed to load signing key. Please run 'env login' again.")?;
 
@@ -427,11 +413,9 @@ impl PublishCommand {
 
         let signature_b64 = sign_bytes_base64(&signing_key, &wasm_bytes);
 
-        // 2. Load API URL
         let api_url =
             std::env::var("REGISTRY_API_URL").unwrap_or("http://localhost:3000".to_string());
 
-        // 3. Construct Payload
         let version = meta.version.clone();
         let purl = format!("pkg:env/{}@{}", package_name, version);
 
@@ -445,7 +429,6 @@ impl PublishCommand {
             oci_reference,
         };
 
-        // 4. Build Multipart Form
         let client = reqwest::Client::new();
 
         cliclack::log::step(format!("Publishing to {}...", api_url))?;
@@ -472,7 +455,6 @@ impl PublishCommand {
             );
         }
 
-        // 6. Send Request with Signature
         let res: reqwest::Response = client
             .post(format!("{}/v1/publish", api_url))
             .header("Authorization", format!("Bearer {}", access_token))
@@ -495,7 +477,6 @@ impl PublishCommand {
                 }
             }
 
-            // Professional Success Message & Visibility Warning
             cliclack::log::info("Artifact analysis initiated (Notary Scan).")?;
             cliclack::log::warning(
                 "Note: Package is Private by default. Make it Public in GitHub Settings to share.",

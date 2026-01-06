@@ -13,6 +13,7 @@ pub struct WhoamiCommand {
     pub registry: String,
 }
 
+#[allow(unused)]
 impl WhoamiCommand {
     pub async fn execute(&self) -> Result<()> {
         intro(console::style("EnvArchitect Identity").bold())?;
@@ -20,13 +21,12 @@ impl WhoamiCommand {
         let registry_url = Url::parse(&self.registry)?;
         let domain = registry_url.host_str().unwrap_or("localhost");
 
-        // 1. Retrieve Token from Keyring with Fallback
         let entry = Entry::new("env-architect", domain)?;
         let token = match entry.get_password() {
             Ok(t) => t,
             Err(e) => {
                 log::info(format!(
-                    "Keyring retrieval failed ({}), checking hosts.toml...",
+                    "Keyring retrieval failed ({}), checking hosts.json...",
                     e
                 ))?;
 
@@ -34,11 +34,11 @@ impl WhoamiCommand {
                 let hosts_path = home
                     .join(".config")
                     .join("env-architect")
-                    .join("hosts.toml");
+                    .join("hosts.json");
 
                 if hosts_path.exists() {
                     let content = std::fs::read_to_string(hosts_path)?;
-                    let hosts: serde_json::Value = toml::from_str(&content)?;
+                    let hosts: serde_json::Value = serde_json::from_str(&content)?;
 
                     if let Some(host_data) = hosts.get(domain) {
                         // Show local identity if available
@@ -57,21 +57,20 @@ impl WhoamiCommand {
                                 return Ok(());
                             }
                         } else {
-                            log::warning("No token found in hosts.toml for this domain.")?;
+                            log::warning("No token found in hosts.json for this domain.")?;
                             return Ok(());
                         }
                     } else {
-                        log::warning(format!("No entry for {} found in hosts.toml.", domain))?;
+                        log::warning(format!("No entry for {} found in hosts.json.", domain))?;
                         return Ok(());
                     }
                 } else {
-                    log::warning("No session found in keyring or hosts.toml. Please login.")?;
+                    log::warning("No session found in keyring or hosts.json. Please login.")?;
                     return Ok(());
                 }
             }
         };
 
-        // 2. Call /auth/me
         let client = Client::new();
         let me_url = registry_url.join("/auth/me")?;
 

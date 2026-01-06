@@ -7,10 +7,13 @@ use url::Url;
 // Use application crate directly
 use application::InstallService;
 
+mod adapters;
 mod commands;
+pub mod constants;
 mod core;
 mod host;
 mod keys;
+mod services;
 mod utils;
 
 #[derive(Parser)]
@@ -40,6 +43,9 @@ enum Commands {
 
     /// Resolve an environment using a WASM plugin (Host Runtime Check)
     Resolve(commands::resolve::ResolveCommand),
+
+    /// Bundle a plugin project into a Wasm component
+    Bundle(commands::bundle::BundleCommand),
 
     /// Publish a package to the registry
     Publish {
@@ -104,7 +110,6 @@ async fn main() -> Result<()> {
                 cliclack::log::warning("Force mode enabled")?;
             }
 
-            // 1. System/Global Install Mode (Homebrew-style)
             // When a package is explicitly named, we operate in system mode.
             // This is context-independent and does not read/write local project files.
             if let Some(pkg_name) = package {
@@ -139,8 +144,9 @@ async fn main() -> Result<()> {
 
                 // DIRECT EXECUTION PATH (SystemExecutor)
                 // If we have a local path (Dev Mode), we execute the plugin directly to support interactive resolution.
-                if resolution.starts_with("path:") {
-                    let path_str = resolution.strip_prefix("path:").unwrap();
+                // DIRECT EXECUTION PATH (SystemExecutor)
+                // If we have a local path (Dev Mode), we execute the plugin directly to support interactive resolution.
+                if let Some(path_str) = resolution.strip_prefix("path:") {
                     let plugin_path = PathBuf::from(path_str);
 
                     crate::core::executor::SystemExecutor::install(&plugin_path).await?;
@@ -170,7 +176,6 @@ async fn main() -> Result<()> {
                 cliclack::log::success(format!("Installed '{}' to global system.", pkg_name))?;
                 cliclack::outro("Done.")?;
             }
-            // 2. Project Install Mode (npm install / cargo build style)
             // When no package is named, we look for a manifest file to restore the environment.
             else {
                 let (_manifest_path, manifest) = match path {
@@ -194,6 +199,9 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Resolve(cmd) => {
+            cmd.execute().await?;
+        }
+        Commands::Bundle(cmd) => {
             cmd.execute().await?;
         }
         Commands::Publish { path } => {

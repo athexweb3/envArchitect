@@ -17,7 +17,6 @@ pub struct ResolveCommand {
     #[arg(long, default_value = "plugin.wasm")]
     pub plugin: PathBuf,
 
-    /// Simulation mode (don't actually install anything, just resolve)
     #[arg(long, short)]
     pub dry_run: bool,
 
@@ -39,7 +38,6 @@ impl ResolveCommand {
 
         let absolute_root = std::fs::canonicalize(&root).unwrap_or(root);
 
-        // 1. Theme Header (Clack Style)
         cliclack::intro(format!(
             "{} {}",
             console::style("EnvArchitect").bold(),
@@ -56,7 +54,6 @@ impl ResolveCommand {
         let spinner = cliclack::spinner();
         spinner.start("Initializing plugin engine...");
 
-        // 1. Configure Wasmtime
         let mut config = Config::new();
         config.wasm_component_model(true);
         config.async_support(true);
@@ -65,27 +62,21 @@ impl ResolveCommand {
         let mut linker: Linker<HostState> = Linker::new(&engine);
         linker.allow_shadowing(true);
 
-        // 2. Link Host Capabilities
         wasmtime_wasi::add_to_linker_async(&mut linker)?;
         wasmtime_wasi_http::add_to_linker_async(&mut linker)?;
         crate::host::bindings::Plugin::add_to_linker(&mut linker, |state: &mut HostState| state)?;
 
-        // 3. Initialize Host State
         let mut allowed_caps: Vec<serde_json::Value> = Vec::new();
 
-        // Initialize Host State with manifest tracking
         let mut manifest_path_str: Option<String> = None;
         let mut manifest_content: Option<String> = None;
 
         let candidates = vec![
-            ("env.toml", true),
-            ("plugin.toml", true),
-            ("env.json", false),
+            (crate::constants::MANIFEST_JSON, false),
             ("plugin.json", false),
-            ("Cargo.toml", true),
         ];
 
-        for (filename, is_toml) in candidates {
+        for (filename, _is_toml) in candidates {
             let path = absolute_root.join(filename);
             if path.exists() {
                 if let Ok(content) = std::fs::read_to_string(&path) {
@@ -97,21 +88,10 @@ impl ResolveCommand {
                     );
                     manifest_content = Some(content.clone());
 
-                    let json_val = if is_toml {
-                        toml::from_str::<serde_json::Value>(&content).ok()
-                    } else {
-                        serde_json::from_str::<serde_json::Value>(&content).ok()
-                    };
+                    let json_val = serde_json::from_str::<serde_json::Value>(&content).ok();
 
                     if let Some(json) = json_val {
-                        let caps_node = if filename == "Cargo.toml" {
-                            json.get("package")
-                                .and_then(|p| p.get("metadata"))
-                                .and_then(|m| m.get("plugin"))
-                                .and_then(|p| p.get("capabilities"))
-                        } else {
-                            json.get("capabilities")
-                        };
+                        let caps_node = json.get("capabilities");
 
                         if let Some(caps) = caps_node.and_then(|v| v.as_array()) {
                             allowed_caps = caps.clone();
@@ -130,12 +110,10 @@ impl ResolveCommand {
             }
         }
 
-        // Final fallback for demo if empty
         if allowed_caps.is_empty() {
             allowed_caps.push(serde_json::json!("ui-interact"));
         }
 
-        // HostState needs Vec<String> for the simple capability check logic for now.
         let host_allowed_names: Vec<String> = allowed_caps
             .iter()
             .map(|v| {
@@ -149,10 +127,13 @@ impl ResolveCommand {
             })
             .collect();
 
-        let host_state = HostState::new(host_allowed_names, manifest_path_str, manifest_content);
+        let host_state = HostState::new(
+            host_allowed_names,
+            manifest_path_str.clone(),
+            manifest_content.clone(),
+        );
         let mut store = Store::new(&engine, host_state);
 
-        // 4. Load Component
         spinner.start("Reading Wasm binary...");
         let component_bytes = std::fs::read(&self.plugin)
             .with_context(|| format!("Failed to read plugin file: {:?}", self.plugin))?;
@@ -160,13 +141,11 @@ impl ResolveCommand {
         let component = Component::new(&engine, component_bytes)?;
         let plugin = Plugin::instantiate_async(&mut store, &component, &linker).await?;
 
-        // 6. Execute
         spinner.start("Discovering system tools...");
         let mut registry = domain::system::InstalledToolsRegistry::new();
         let _ = registry.scan();
         let mut system_tools = std::collections::HashMap::new();
 
-        // Populate system_tools for context
         for tool in ["node", "python", "rustc", "cargo", "go"] {
             let versions = registry.get_installed(tool);
             if !versions.is_empty() {
@@ -181,20 +160,42 @@ impl ResolveCommand {
         }
 
         spinner.start("Resolving dependencies...");
-        let context = serde_json::json!({
-            "target_os": std::env::consts::OS,
-            "target_arch": std::env::consts::ARCH,
-            "project_root": absolute_root.to_string_lossy(),
-            "env_vars": {},
-            "allowed_capabilities": allowed_caps,
-            "parent_manifest": null,
-            "system_tools": system_tools
-        });
 
-        // Hook for errors
-        // ... (Preserve panic hook logic if needed, or rely on nice errors)
+        let env_vars_json =
+            serde_json::to_string(&std::collections::HashMap::<String, String>::new())?;
 
-        let result = plugin.call_resolve(&mut store, &context.to_string()).await;
+        let system_tools_json = serde_json::to_string(&system_tools)?;
+
+        let configuration_json = manifest_content
+            .as_ref()
+            .and_then(|c| {
+                if manifest_path_str
+                    .as_ref()
+                    .map(|s| s.ends_with(".json"))
+                    .unwrap_or(false)
+                {
+                    serde_json::from_str::<serde_json::Value>(c)
+                        .ok()
+                        .map(|v| v.to_string())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| "{}".to_string());
+
+        let allowed_caps_json = serde_json::to_string(&allowed_caps)?;
+
+        let context = crate::host::bindings::ResolutionContext {
+            target_os: std::env::consts::OS.to_string(),
+            target_arch: std::env::consts::ARCH.to_string(),
+            project_root: absolute_root.to_string_lossy().to_string(),
+            env_vars_json,
+            system_tools_json,
+            configuration_json,
+            allowed_capabilities_json: allowed_caps_json,
+        };
+
+        let result = plugin.call_resolve(&mut store, &context).await;
 
         match result {
             Ok(Ok(output)) => {
@@ -204,26 +205,22 @@ impl ResolveCommand {
                     .unwrap_or_else(|_| serde_json::Value::String(output.plan_json));
 
                 cliclack::log::info("Install Plan:")?;
-                // cliclack::note doesn't take a title in the same way, using log::info for content
+
                 cliclack::log::info(serde_json::to_string_pretty(&valid_json)?)?;
 
-                // Brain Integration: Connect Core Intelligence
-                // We parse the manifest from the plugin output to check for system conflicts
                 if let Some(manifest_node) = valid_json.get("manifest").cloned() {
                     if let Ok(manifest) = serde_json::from_value::<env_manifest::EnhancedManifest>(
                         manifest_node.clone(),
                     ) {
-                        // 1. Initialize Intelligence
                         let platform = domain::system::PlatformDetector::detect();
                         let mut registry = domain::system::InstalledToolsRegistry::new();
-                        // Perform live scan
+
                         let _ = registry.scan();
                         let resolver =
                             domain::intelligence::ConflictResolver::new(platform, registry);
 
                         cliclack::log::step("Analyzing for system conflicts (V2 Intelligence)...")?;
 
-                        // 2. Detect Conflicts
                         for (tool_name, dep_spec) in &manifest.dependencies {
                             use env_manifest::DependencySpec;
                             let version_req = match dep_spec {
@@ -234,9 +231,8 @@ impl ResolveCommand {
                             if let Some(conflict) = resolver.detect_conflicts(
                                 tool_name,
                                 &version_req,
-                                "current-project", // simplified for now
+                                "current-project",
                             ) {
-                                // 3. Resolve / Present Options
                                 let recommendations = resolver.resolve(&conflict)?;
 
                                 if !recommendations.is_empty() {
@@ -273,7 +269,6 @@ impl ResolveCommand {
                             }
                         }
 
-                        // Proceed to Phase 1 V2: Create Shims within the same scope
                         let spinner_v2 = cliclack::spinner();
                         spinner_v2.start("Finalizing V2 Sovereign Environment...");
 
@@ -285,7 +280,6 @@ impl ResolveCommand {
                         for (name, spec) in &manifest.dependencies {
                             spinner_v2.start(format!("Shimming {}...", name));
 
-                            // 1. Ensure tool is in store (Prototype: Mock install if not exists)
                             let version_req = match spec {
                                 env_manifest::DependencySpec::Simple(req) => req.to_string(),
                                 env_manifest::DependencySpec::Detailed(details) => {
@@ -305,14 +299,15 @@ impl ResolveCommand {
                                     name
                                 ));
 
-                                // 1.1 Verify binary integrity
-                                let mock_sig = "MEQCIA...";
+                                let mock_sig = "SGVsbG8gV29ybGQ="; // "Hello World" in Base64
+                                let mock_cert = "SGVsbG8gQ2VydGlmaWNhdGU="; // "Hello Certificate" in Base64
                                 let mock_identity = "developer@architect.io";
 
                                 if verifier
                                     .verify_binary(
                                         std::path::Path::new(name),
                                         mock_sig,
+                                        mock_cert,
                                         mock_identity,
                                     ) // Explicit std::path::Path
                                     .await?
@@ -328,7 +323,6 @@ impl ResolveCommand {
                                 }
                             }
 
-                            // 2. Create the shim script
                             let shim_path = shims_dir.join(name);
                             let shim_content = format!(
                                 "#!/bin/bash\nexec env-architect shim {} -- \"$@\"\n",
@@ -346,7 +340,6 @@ impl ResolveCommand {
                         }
                         spinner_v2.stop("Sovereign environment ready.");
 
-                        // Phase 3 V2: Team Consensus & Drift Detection
                         let consensus =
                             ConsensusEngine::load_lockfile(&absolute_root).unwrap_or_default();
                         let local_tools = store.list_tools()?;
@@ -369,7 +362,6 @@ impl ResolveCommand {
                                 .interact()?
                             {
                                 cliclack::log::info("Harmonizing tools...")?;
-                                // TODO: Execute harmonization logic
                             }
                         }
 
@@ -378,7 +370,6 @@ impl ResolveCommand {
                             console::style("architect shell").bold()
                         ))?;
 
-                        // Handle Intelligence Data (Proposed Actions)
                         if let Some(intel) = manifest.intelligence {
                             if !intel.proposed_actions.is_empty() {
                                 cliclack::log::warning(
@@ -470,7 +461,7 @@ impl ResolveCommand {
                                                     "Applying patch: {}",
                                                     patch
                                                 ))?;
-                                                // TODO: Implement robust TOML patching
+
                                                 cliclack::log::warning("Patch application not yet fully implemented. Please verify env.toml manually.")?;
                                             }
 

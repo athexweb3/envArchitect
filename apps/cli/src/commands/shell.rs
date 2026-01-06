@@ -31,14 +31,12 @@ impl ShellCommand {
             console::style(project_name).bold().cyan()
         ))?;
 
-        // 1. Discover required shims from env.json/toml
         // For Phase 1, we simply create a temporary shims directory and add it to PATH
         let shims_dir = absolute_root.join(".architect").join("shims");
         if !shims_dir.exists() {
             std::fs::create_dir_all(&shims_dir)?;
         }
 
-        // 2. Setup the shell environment
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "zsh".to_string());
 
         // Update PATH: Prepend shims directory
