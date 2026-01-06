@@ -219,7 +219,9 @@ impl<P: PluginHandler> TestRunner<P> {
     pub async fn resolve(&self, ctx: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
         let _guard = self.host.enter();
         self.set_context();
-        self.plugin.resolve(ctx).await
+        self.plugin
+            .resolve(ctx, <P as PluginHandler>::Config::default())
+            .await
     }
 
     pub async fn install(&self, plan: &InstallPlan, state: Option<String>) -> Result<()> {

@@ -8,6 +8,9 @@ struct StressPlugin;
 
 #[env_architect_sdk::async_trait]
 impl PluginHandler for StressPlugin {
+    type Config = ();
+    const CONFIG_KEY: &'static str = "";
+
     async fn validate(&self, manifest: &serde_json::Value) -> Result<Vec<String>> {
         host::info("Stress Test: Validating all sections...");
         let mut errors = Vec::new();
@@ -22,6 +25,7 @@ impl PluginHandler for StressPlugin {
     async fn resolve(
         &self,
         context: &env_architect_sdk::ResolutionContext,
+        _config: Self::Config,
     ) -> Result<(InstallPlan, Option<String>)> {
         host::info(format!(
             "Stress Test: Resolving for {}/{}...",
@@ -41,15 +45,11 @@ impl PluginHandler for StressPlugin {
 
         // 2. Text Input & Spinner
         let spinner = host::spinner("Starting deep resolution...");
-        let custom_name = host::input(
-            "Enter a custom environment name",
-            Some("stress-env".to_string()),
-        );
         spinner.set_message("Initializing builder...");
 
-        let mut builder = EnvBuilder::from_context(context)
-            .context("Failed to load from context")?
-            .project(&custom_name, "1.0.0");
+        let mut builder =
+            EnvBuilder::from_context(context).context("Failed to load from context")?;
+        // .project() removed: Metadata should come from env.json/toml
 
         // 3. Select & Multi-step Logic
         let db_type = host::select(
@@ -135,7 +135,7 @@ mod tests {
         let runner = TestRunner::new(plugin);
 
         // 1. Mock System Tools (V2 Feature)
-        let context = ResolutionContext::new("macos", "aarch64", "/tmp");
+        let context = env_architect_sdk::ResolutionContext::new("macos", "aarch64", "/tmp");
         let mut context_with_node = context.clone();
         context_with_node
             .system_tools
@@ -154,6 +154,17 @@ mod tests {
         runner
             .host
             .mock_secret("Enter sensitive API token", "masked-token");
+
+        // Mock env.json for EnvBuilder
+        runner.host.set_file(
+            "/tmp/env.json",
+            r#"{
+                "project": {
+                    "name": "test-env",
+                    "version": "1.0.0"
+                }
+            }"#,
+        );
 
         let (plan, _state) = runner.resolve(&context_with_node).await?;
 

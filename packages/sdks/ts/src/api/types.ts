@@ -5,13 +5,14 @@ export type {
 	ResolutionOutput,
 } from "@bindings/plugin";
 
-export type { LogLevel } from "../bindings/interfaces/env-architect-plugin-host";
+export type { LogLevel } from "@bindings/interfaces/env-architect-plugin-host";
 
 // User-facing Plugin Interface
-export interface Plugin {
-	validate(manifestJson: string): string[];
-	resolve(contextJson: string): ResolutionOutput;
-	install(context: InstallationContext): void;
+// User-facing Plugin Interface
+export namespace Plugin {
+	export type Validate = (manifestJson: string) => string[];
+	export type Resolve = (contextJson: string) => ResolutionOutput;
+	export type Install = (context: InstallationContext) => void;
 }
 
 export interface InstallPlan {
@@ -22,6 +23,7 @@ export interface ResolutionContext {
 	projectRoot: string;
 	targetOs?: "linux" | "macos" | "windows";
 	targetArch?: "x86_64" | "aarch64";
+	configuration?: any; // The full parsed content of env.toml/env.json
 }
 
 export type Capability =

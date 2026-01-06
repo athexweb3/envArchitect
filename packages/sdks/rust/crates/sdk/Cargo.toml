@@ -5,6 +5,9 @@ edition = "2021"
 description = "SDK for creating environment packages for EnvArchitect"
 license = "MIT"
 
+[package.metadata.plugin]
+project = { name = "basic-plugin-example", version = "0.1.0" }
+
 [dependencies]
 # Re-export domain types (temporarily relative, will be published)
 # domain = { path = "../../../env-architect/crates/domain" }
@@ -25,4 +28,4 @@ env-architect-macros = { path = "../macros" }
 env-manifest = { version = "0.1.0", path = "../../../../manifest" }
 
 [dev-dependencies]
-tokio = { version = "1.42.0", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
