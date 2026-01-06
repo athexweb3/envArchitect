@@ -1,0 +1,19 @@
+{
+	"name": "node",
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"build": "node scripts/build.mjs",
+		"prebuild": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --platform=node --external:env-architect:plugin/*"
+	},
+	"dependencies": {
+		"@env-architect/sdk": "file:../../packages/sdks/ts"
+	},
+	"devDependencies": {
+		"@bytecodealliance/componentize-js": "^0.13.0",
+		"@bytecodealliance/jco": "^1.0.0",
+		"@types/node": "^20.0.0",
+		"esbuild": "^0.19.0",
+		"typescript": "^5.0.0"
+	}
+}

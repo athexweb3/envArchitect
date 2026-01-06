@@ -42,6 +42,10 @@ pub struct ResolutionContext {
     /// A map of tools already installed in the environment (e.g., `{"node": ["18.16.0"]}`).
     #[serde(default)]
     pub system_tools: HashMap<String, Vec<String>>,
+
+    /// The parsed configuration object (from env.toml, env.json, etc.) passed by the host.
+    #[serde(default)]
+    pub configuration: Option<serde_json::Value>,
 }
 
 impl ResolutionContext {
@@ -59,6 +63,28 @@ impl ResolutionContext {
             allowed_capabilities: Vec::new(),
             parent_manifest: None,
             system_tools: HashMap::new(),
+            configuration: None,
+        }
+    }
+
+    /// Helper to retrieve a plugin-specific configuration section.
+    ///
+    /// This method automatically checks common locations for the configuration:
+    /// 1. `[key]` (Root level)
+    /// 2. `[plugin.key]` (Plugin namespace)
+    /// 3. `[tool.key]` (Tool namespace - potential convention)
+    pub fn get_config<T: serde::de::DeserializeOwned>(&self, key: &str) -> Option<T> {
+        let config = self.configuration.as_ref()?;
+
+        // Strategy: Key -> Plugin.Key -> Tool.Key
+        let val = config
+            .get(key)
+            .or_else(|| config.get("plugin").and_then(|p| p.get(key)))
+            .or_else(|| config.get("tool").and_then(|t| t.get(key)));
+
+        match val {
+            Some(v) => serde_json::from_value(v.clone()).ok(),
+            None => None,
         }
     }
 }

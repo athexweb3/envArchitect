@@ -18,11 +18,25 @@ use env_architect_sdk::prelude::*;
 #[derive(Default)]
 struct DoctorPlugin;
 
+#[derive(serde::Deserialize, Default)]
+struct DoctorConfig {
+    verbose: Option<bool>,
+}
+
 #[async_trait]
 impl Plugin for DoctorPlugin {
-    async fn resolve(&self, _context: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
+    type Config = DoctorConfig;
+    const CONFIG_KEY: &'static str = "doctor";
+
+    async fn resolve(
+        &self,
+        _context: &env_architect_sdk::ResolutionContext,
+        config: Self::Config,
+    ) -> Result<(InstallPlan, Option<String>)> {
+        let verbose = config.verbose.unwrap_or(false);
+
         // POC: Run checks during resolve to see output in CLI
-        run_doctor();
+        run_doctor(verbose);
         Ok((InstallPlan::default(), None))
     }
 
@@ -32,7 +46,7 @@ impl Plugin for DoctorPlugin {
     }
 }
 
-fn run_doctor() {
+fn run_doctor(_verbose: bool) {
     // ANSI Colors
     let style = |s: &str, code: u8| format!("\x1b[{}m{}\x1b[0m", code, s);
     let bold = |s: &str| style(s, 1);

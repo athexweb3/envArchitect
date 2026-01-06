@@ -5,7 +5,7 @@
 	"main": "dist/src/index.js",
 	"types": "dist/src/index.d.ts",
 	"scripts": {
-		"build": "bun run codegen && tsc && tsc-alias",
+		"build": "cp -r ../wit ./wit && bun run codegen && tsc && tsc-alias",
 		"codegen": "jco types ../wit/plugin.wit --world-name plugin --out-dir src/bindings && tsc",
 		"componentize": "tsc && node dist/scripts/build.js"
 	},

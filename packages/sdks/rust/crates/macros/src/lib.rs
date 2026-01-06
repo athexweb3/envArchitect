@@ -13,11 +13,9 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
     let struct_name = &input_struct.ident;
 
     // Configuration Priority Order:
-    // 1. env.toml
-    // 2. plugin.toml
-    // 3. env.json
-    // 4. plugin.json
-    // 5. Cargo.toml [package.metadata.plugin]
+    // 1. env.json
+    // 2. plugin.json
+    // 3. Cargo.toml [package.metadata.plugin]
 
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
     let args_path = Path::new(&manifest_dir);
@@ -28,20 +26,11 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     enum ConfigKind {
-        Toml,
         Json,
         Cargo,
     }
 
     let candidates = vec![
-        ConfigSource {
-            path: args_path.join("env.toml"),
-            kind: ConfigKind::Toml,
-        },
-        ConfigSource {
-            path: args_path.join("plugin.toml"),
-            kind: ConfigKind::Toml,
-        },
         ConfigSource {
             path: args_path.join("env.json"),
             kind: ConfigKind::Json,
@@ -61,13 +50,6 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
     for candidate in &candidates {
         if candidate.path.exists() {
             match candidate.kind {
-                ConfigKind::Toml => {
-                    // Validate basic TOML structure (optional, but good for sanity)
-                    if std::fs::read_to_string(&candidate.path).is_ok() {
-                        found_config = Some(candidate);
-                        break;
-                    }
-                }
                 ConfigKind::Json => {
                     if let Ok(content) = std::fs::read_to_string(&candidate.path) {
                         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
@@ -100,11 +82,9 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
         let msg = format!(
             "Missing plugin configuration.\n\
              Checked priority order:\n\
-             1. env.toml\n\
-             2. plugin.toml\n\
-             3. env.json (must have 'project' section)\n\
-             4. plugin.json (must have 'project' section)\n\
-             5. Cargo.toml (must have [package.metadata.plugin])\n\
+             1. env.json (must have 'project' section)\n\
+             2. plugin.json (must have 'project' section)\n\
+             3. Cargo.toml (must have [package.metadata.plugin])\n\
              Manifest Dir: {}",
             manifest_dir
         );
@@ -145,15 +125,30 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
                 ).unwrap_or_else(|e| vec![e.to_string()])
             }
 
-            fn resolve(context_json: String) -> Result<ResolutionOutput, String> {
+            fn resolve(context: ResolutionContext) -> Result<ResolutionOutput, String> {
                  use env_architect_sdk::prelude::*;
+                 use std::collections::HashMap;
 
-                 let context: ResolutionContext = serde_json::from_str(&context_json)
-                    .map_err(|e| format!("Context Parse Error: {}", e))?;
+                 // 1. Deserialize the JSON fields from the WIT Record
+                 let env_vars: HashMap<String, String> = serde_json::from_str(&context.env_vars_json)
+                     .map_err(|e| format!("Env Vars Parse Error: {}", e))?;
 
-                 // Inject allowed capabilities into thread-local scope
-                 // We map the structured Capability enum to simple strings (e.g. "ui-interact")
-                 let active_caps_strings: Vec<String> = context.allowed_capabilities.iter().map(|cap| {
+                 let system_tools: HashMap<String, Vec<String>> = serde_json::from_str(&context.system_tools_json)
+                     .map_err(|e| format!("System Tools Parse Error: {}", e))?;
+
+                 let configuration: Option<serde_json::Value> = if context.configuration_json.trim().is_empty() {
+                     None
+                 } else {
+                     Some(serde_json::from_str(&context.configuration_json)
+                         .map_err(|e| format!("Configuration Parse Error: {}", e))?)
+                 };
+
+                 let allowed_capabilities: Vec<env_architect_sdk::contract::reexports::Capability> =
+                    serde_json::from_str(&context.allowed_capabilities_json)
+                     .map_err(|e| format!("Capabilities Parse Error: {}", e))?;
+
+                 // 2. Inject allowed capabilities into thread-local scope
+                 let active_caps_strings: Vec<String> = allowed_capabilities.iter().map(|cap| {
                      use env_architect_sdk::contract::reexports::Capability;
                      match cap {
                          Capability::Network(_) => "network".to_string(),
@@ -169,10 +164,26 @@ pub fn plugin(_args: TokenStream, input: TokenStream) -> TokenStream {
                  }).collect();
                  env_architect_sdk::api::context::set_active_capabilities(active_caps_strings);
 
+                 // 3. Construct the SDK Context
+                 let mut sdk_context = env_architect_sdk::ResolutionContext::new(
+                     context.target_os,
+                     context.target_arch,
+                     context.project_root,
+                 );
+                 sdk_context.env_vars = env_vars;
+                 sdk_context.system_tools = system_tools;
+                 sdk_context.configuration = configuration;
+                 sdk_context.allowed_capabilities = allowed_capabilities;
+
+                 // 4. Call User Plugin
                  let plugin = #struct_name::default();
 
+                 let config = sdk_context
+                     .get_config::<<#struct_name as PluginHandler>::Config>(<#struct_name as PluginHandler>::CONFIG_KEY)
+                     .unwrap_or_default();
+
                  let (plan, state) = env_architect_sdk::futures::executor::block_on(
-                     PluginHandler::resolve(&plugin, &context)
+                     PluginHandler::resolve(&plugin, &sdk_context, config)
                  ).map_err(|e| e.to_string())?;
 
                  let plan_json = serde_json::to_string(&plan)

@@ -1,0 +1,70 @@
+package env-architect:plugin;
+
+/// Host-mediated interfaces for plugins
+interface host {
+    /// Progress and messaging
+    log: func(level: log-level, message: string);
+    
+    /// Host UI interactions
+    confirm: func(prompt: string, default: bool) -> bool;
+    input: func(prompt: string, default: option<string>) -> string;
+    secret: func(prompt: string) -> string;
+    select: func(prompt: string, options: list<string>, default: option<string>) -> string;
+    
+    /// File System & Env (Virtualized)
+    get-env: func(key: string) -> option<string>;
+    read-file: func(path: string) -> result<string, string>;
+    write-file: func(path: string, content: string) -> result<_, string>;
+    create-dir: func(path: string) -> result<_, string>;
+    
+    /// System Execution
+    exec: func(command: string, args: list<string>) -> result<string, string>;
+
+    enum log-level {
+        debug,
+        info,
+        warn,
+        error
+    }
+}
+
+world plugin {
+    import host;
+
+    /// 1. Metadata Validation
+    /// Called when the host parses the manifest to ensure custom plugin-specific rules.
+    export validate: func(manifest-json: string) -> list<string>;
+
+    /// 2. Dependency Resolution
+    /// The core hook: transforms current context into an execution plan.
+    export resolve: func(context: resolution-context) -> result<resolution-output, string>;
+
+    /// 3. Side Effects (Optional)
+    /// Performs actual system changes (e.g., creating symlinks, downloading binaries).
+    export install: func(context: installation-context) -> result<_, string>;
+
+    record resolution-context {
+        target-os: string,
+        target-arch: string,
+        project-root: string,
+        /// JSON-encoded map of environment variables
+        env-vars-json: string,
+        /// JSON-encoded map of system tools
+        system-tools-json: string,
+        /// JSON-encoded configuration object
+        configuration-json: string,
+        /// JSON-encoded list of allowed capabilities
+        allowed-capabilities-json: string
+    }
+
+    record resolution-output {
+        /// JSON-encoded InstallPlan
+        plan-json: string,
+        state: option<string>
+    }
+
+    record installation-context {
+        plan-json: string,
+        state: option<string>
+    }
+}
