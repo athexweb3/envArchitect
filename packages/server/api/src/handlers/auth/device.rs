@@ -30,7 +30,7 @@ pub async fn initiate_handler(
         .unwrap_or_else(|| "http://localhost:3001".to_string());
 
     match auth_service.initiate_device_flow(&host).await {
-        Ok(response) => Json(response).into_response(),
+        Ok(response) => Json::<shared::dto::AuthDeviceResponse>(response).into_response(),
         Err(e) => {
             tracing::error!("Failed to initiate device flow: {:?}", e);
             (

@@ -37,7 +37,8 @@ pub struct CallbackQuery {
 #[derive(Deserialize, Debug)]
 struct GithubTokenResponse {
     access_token: String,
-    scope: Option<String>,
+    #[allow(dead_code)]
+    pub scope: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -152,7 +153,7 @@ pub async fn callback_handler(
         return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
     }
 
-    Redirect::to("http://localhost:3001/auth/portal?message=Login successful").into_response()
+    Redirect::to("http://localhost:3001/auth/verify?message=Login successful").into_response()
 }
 
 async fn mock_auth(state: AppState, session: Session) -> Response {
@@ -170,5 +171,5 @@ async fn mock_auth(state: AppState, session: Session) -> Response {
     };
 
     let _ = session.insert("user_id", user.id).await;
-    Redirect::to("http://localhost:3001/auth/portal?message=Mock Login successful").into_response()
+    Redirect::to("http://localhost:3001/auth/verify?message=Mock Login successful").into_response()
 }

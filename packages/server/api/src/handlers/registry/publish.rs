@@ -9,19 +9,16 @@ use axum::{
 use base64::{engine::general_purpose, Engine as _};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 
-use shared::dto::{DependencyPayload as DependencyPayloadShared, PublishPayload};
-
-// Alias for convenience if needed, or just use the shared one
-type DependencyPayload = DependencyPayloadShared;
+use shared::dto::PublishPayload;
 
 #[derive(Serialize)]
 pub struct PublishResponse {
     pub id: Uuid,
     pub message: String,
 }
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
-use worker::jobs::Job;
+// use worker::jobs::Job;  // TODO: Re-enable when worker crate is available
 
 pub async fn publish_plugin(
     State(state): State<AppState>,
@@ -29,6 +26,7 @@ pub async fn publish_plugin(
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Result<Json<PublishResponse>, ServiceError> {
+    tracing::info!("Content-Type: {:?}", headers.get("content-type"));
     // 1. Extract Parts (Metadata + File)
     let mut payload: Option<PublishPayload> = None;
     let mut file_bytes: Option<Vec<u8>> = None;
@@ -197,7 +195,7 @@ pub async fn publish_plugin(
     .map_err(|e| ServiceError::DatabaseError(e.to_string()))?;
 
     // 5. Save Artifact (Storage)
-    let storage_dir = std::path::Path::new("storage");
+    let storage_dir = std::path::Path::new("../../../storage");
     if !storage_dir.exists() {
         std::fs::create_dir_all(storage_dir)
             .map_err(|e| ServiceError::InternalError(e.to_string()))?;
@@ -228,26 +226,24 @@ pub async fn publish_plugin(
         )
         .execute(&state.db.pool)
         .await
-        .map_err(|e| ServiceError::DatabaseError(e.to_string()))?;
+        .map_err(|e: sqlx::Error| ServiceError::DatabaseError(e.to_string()))?;
     }
 
     // 6. Trigger Notary Scan
-
-    // Yes, `state.worker_tx`.
-    // We need to make sure `Job` is available.
-    // Wait, `ScanPlugin` job needs `version_id`. `components` table is basically `versions`.
-    // `source_id` IS `version_id`.
+    // TODO: Re-enable when worker crate is available
+    /*
     let scan_job = Job::ScanPlugin {
-        version_id, // Use the ID from package_versions
+        version_id,
         name: payload.name.clone(),
         version: payload.version.clone(),
-        bucket_key: filepath.to_string_lossy().to_string(), // Local path for now
+        bucket_key: filepath.to_string_lossy().to_string(),
     };
 
     if let Err(e) = state.worker_tx.send(scan_job).await {
         tracing::error!("Failed to queue Notary scan: {}", e);
-        // Don't fail the upload, but log heavily.
     }
+    */
+    tracing::info!("Notary scan queue temporarily disabled (worker crate unavailable)");
 
     // 7. Process Dependencies
     for dep in payload.dependencies {

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// The "World Class" Score Card
 /// Every plugin gets one of these calculated in the background.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchSignals {
     /// Code Health, Docs Presence, etc. (0.0 - 1.0)

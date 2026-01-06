@@ -5,6 +5,7 @@ use std::time::Duration;
 
 pub use sqlx; // Re-export for convenience
 pub mod models;
+pub mod repositories;
 
 #[derive(Clone)]
 pub struct Database {

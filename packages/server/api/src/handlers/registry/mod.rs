@@ -8,6 +8,7 @@ use serde_json::json;
 
 pub mod dependents;
 pub mod publish;
+pub mod scan_results;
 pub mod search;
 
 use crate::state::AppState;
@@ -16,6 +17,8 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/v1/publish", post(publish::publish_plugin))
         .route("/v1/search", get(search::search_handler))
+        .route("/v1/scans/stats", get(scan_results::get_dashboard_stats))
+        .route("/api/scans/stats", get(scan_results::get_dashboard_stats))
         .route(
             "/v1/plugins/:name/dependents",
             get(dependents::list_dependents),

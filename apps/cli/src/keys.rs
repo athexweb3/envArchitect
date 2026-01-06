@@ -58,6 +58,7 @@ pub fn generate_or_load_signing_key() -> Result<SigningKey> {
 }
 
 /// Get the public key in base64-encoded format for registration
+#[allow(dead_code)]
 pub fn get_public_key_base64(signing_key: &SigningKey) -> String {
     let verifying_key = signing_key.verifying_key();
     general_purpose::STANDARD.encode(verifying_key.to_bytes())

@@ -72,9 +72,26 @@ impl TokenRepository {
     }
 
     pub async fn authorize_device_code(&self, user_code: &str, user_id: Uuid) -> Result<()> {
-        sqlx::query("UPDATE device_codes SET user_id = $1 WHERE user_code = $2")
+        sqlx::query("UPDATE device_codes SET user_id = $1 WHERE LOWER(user_code) = LOWER($2)")
             .bind(user_id)
             .bind(user_code)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn find_refresh_token(&self, token_hash: &str) -> Result<Option<Uuid>> {
+        sqlx::query_scalar(
+            "SELECT user_id FROM refresh_tokens WHERE token_hash = $1 AND expires_at > NOW()",
+        )
+        .bind(token_hash)
+        .fetch_optional(&self.pool)
+        .await
+    }
+
+    pub async fn delete_device_code(&self, device_code: &str) -> Result<()> {
+        sqlx::query("DELETE FROM device_codes WHERE device_code = $1")
+            .bind(device_code)
             .execute(&self.pool)
             .await?;
         Ok(())

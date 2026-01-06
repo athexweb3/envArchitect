@@ -1,7 +1,14 @@
 use crate::handlers::registry::ServiceError;
 use crate::services::tuf::{SignedMetadata, Snapshot, Targets, Timestamp};
 use crate::state::AppState;
-use axum::{extract::State, Json};
+use axum::{extract::State, routing::get, Json, Router};
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/tuf/targets.json", get(get_targets))
+        .route("/tuf/snapshot.json", get(get_snapshot))
+        .route("/tuf/timestamp.json", get(get_timestamp))
+}
 
 pub async fn get_targets(
     State(state): State<AppState>,

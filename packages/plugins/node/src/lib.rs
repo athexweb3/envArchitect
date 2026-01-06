@@ -6,42 +6,27 @@ use serde_json::Value;
 struct NodePlugin;
 
 #[async_trait]
+
 impl PluginHandler for NodePlugin {
-    async fn resolve(&self, _context: &ResolutionContext) -> Result<(InstallPlan, Option<String>)> {
+    type Config = serde_json::Value; // Parse simply as JSON for now
+    const CONFIG_KEY: &'static str = "node";
+
+    async fn resolve(
+        &self,
+        _context: &env_architect_sdk::ResolutionContext,
+        config: Self::Config,
+    ) -> Result<(InstallPlan, Option<String>)> {
         let mut plan = InstallPlan::default();
 
         // 1. Try to read package.json engines / Manifest config
         let mut custom_state = "node".to_string();
 
-        // Check for configuration in the env.toml manifest passed via context context-json implied?
-        // Actually, we need to read the manifest potentially.
-        // But for now, let's look for env.toml directly as we do package.json?
-        // Host capabilities allow reading files.
-
-        if let Ok(content) = host::read_file("env.toml") {
-            // host::log(host::LogLevel::Info, &format!("DEBUG: Read env.toml: {}", content));
-            if let Ok(toml_val) = toml::from_str::<serde_json::Value>(&content) {
-                if let Some(node_config) = toml_val
-                    .get("node")
-                    .or_else(|| toml_val.get("plugin").and_then(|p| p.get("node")))
-                {
-                    if let Some(state_val) = node_config.get("state").and_then(|v| v.as_str()) {
-                        custom_state = state_val.to_string();
-                        // host::log(host::LogLevel::Info, &format!("DEBUG: Found custom state: {}", custom_state));
-                    }
-                }
-            } else {
-                host::log(
-                    env_architect_sdk::LogLevel::Warn,
-                    "Failed to parse env.toml as JSON Value",
-                );
-            }
-        } else {
-            host::log(
-                env_architect_sdk::LogLevel::Warn,
-                "Failed to read env.toml in plugin",
-            );
+        // Extract state from the passed config if available
+        if let Some(state_val) = config.get("state").and_then(|v| v.as_str()) {
+            custom_state = state_val.to_string();
         }
+
+        // Logic moved to config extraction above
 
         // 0. Detect Current Version
         let nvm_dir = host::get_env("NVM_DIR").unwrap_or_else(|| "$HOME/.nvm".to_string());

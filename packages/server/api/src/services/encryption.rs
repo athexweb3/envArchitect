@@ -3,21 +3,24 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use anyhow::{anyhow, Result};
-use std::env;
 use rand::RngCore;
+use std::env;
 
+#[allow(dead_code)]
 pub fn encrypt(plaintext: &str) -> Result<String> {
     let key_hex = env::var("ENCRYPTION_KEY").map_err(|_| anyhow!("ENCRYPTION_KEY not set"))?;
-    let key_bytes = hex::decode(key_hex.trim()).map_err(|_| anyhow!("Invalid hex in ENCRYPTION_KEY"))?;
-    
+    let key_bytes =
+        hex::decode(key_hex.trim()).map_err(|_| anyhow!("Invalid hex in ENCRYPTION_KEY"))?;
+
     if key_bytes.len() != 32 {
         return Err(anyhow!("ENCRYPTION_KEY must be 32 bytes (64 hex chars)"));
     }
 
-    let cipher = Aes256Gcm::new_from_slice(&key_bytes).map_err(|e| anyhow!("Cipher init failed: {}", e))?;
-    
+    let cipher =
+        Aes256Gcm::new_from_slice(&key_bytes).map_err(|e| anyhow!("Cipher init failed: {}", e))?;
+
     let mut nonce_bytes = [0u8; 12];
-    let mut rng = rand::rng();
+    let mut rng = rand::thread_rng();
     rng.fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
 
@@ -32,11 +35,14 @@ pub fn encrypt(plaintext: &str) -> Result<String> {
     Ok(hex::encode(combined))
 }
 
+#[allow(dead_code)]
 pub fn decrypt(hex_ciphertext: &str) -> Result<String> {
     let key_hex = env::var("ENCRYPTION_KEY").map_err(|_| anyhow!("ENCRYPTION_KEY not set"))?;
-    let key_bytes = hex::decode(key_hex.trim()).map_err(|_| anyhow!("Invalid hex in ENCRYPTION_KEY"))?;
-    
-    let combined = hex::decode(hex_ciphertext.trim()).map_err(|_| anyhow!("Invalid hex ciphertext"))?;
+    let key_bytes =
+        hex::decode(key_hex.trim()).map_err(|_| anyhow!("Invalid hex in ENCRYPTION_KEY"))?;
+
+    let combined =
+        hex::decode(hex_ciphertext.trim()).map_err(|_| anyhow!("Invalid hex ciphertext"))?;
     if combined.len() < 12 {
         return Err(anyhow!("Ciphertext too short"));
     }
@@ -44,7 +50,8 @@ pub fn decrypt(hex_ciphertext: &str) -> Result<String> {
     let (nonce_bytes, ciphertext) = combined.split_at(12);
     let nonce = Nonce::from_slice(nonce_bytes);
 
-    let cipher = Aes256Gcm::new_from_slice(&key_bytes).map_err(|e| anyhow!("Cipher init failed: {}", e))?;
+    let cipher =
+        Aes256Gcm::new_from_slice(&key_bytes).map_err(|e| anyhow!("Cipher init failed: {}", e))?;
     let plaintext = cipher
         .decrypt(nonce, ciphertext)
         .map_err(|e| anyhow!("Decryption failed: {}", e))?;

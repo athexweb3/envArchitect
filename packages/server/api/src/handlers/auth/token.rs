@@ -41,6 +41,7 @@ pub async fn poll_handler(
         }
     }
 }
+
 pub async fn me_handler(State(state): State<AppState>, headers: axum::http::HeaderMap) -> Response {
     let auth_header = headers
         .get("Authorization")
@@ -71,7 +72,7 @@ pub async fn me_handler(State(state): State<AppState>, headers: axum::http::Head
     };
 
     match auth_service.find_user_by_id(user_id).await {
-        Ok(Some(user)) => Json(user).into_response(),
+        Ok(Some(user)) => Json::<database::models::User>(user).into_response(),
         Ok(None) => (StatusCode::NOT_FOUND, "User not found").into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
