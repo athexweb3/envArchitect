@@ -23,14 +23,12 @@ async fn publish_handler(
     State(db): State<Arc<Database>>,
     Json(payload): Json<PublishRequest>,
 ) -> Result<Json<Value>, StatusCode> {
-    // 1. MOCK AUTH: Get or Create a Demo User
     // In production, this comes from the JWT Token claims
     let user_id = get_or_create_demo_user(&db).await.map_err(|e| {
         tracing::error!("Auth failed: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    // 2. Parsed Version (in real app, use semver crate)
     // For MVP, we naively parse "1.0.0"
     let parts: Vec<&str> = payload.version.split('.').collect();
     if parts.len() < 3 {

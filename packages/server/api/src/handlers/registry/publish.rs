@@ -232,8 +232,7 @@ pub async fn publish_plugin(
     }
 
     // 6. Trigger Notary Scan
-    // This assumes `worker` crate and `Job` enum are accessible.
-    // In `main.rs`, we initialized worker channel. We need to pass it to AppState?
+
     // Yes, `state.worker_tx`.
     // We need to make sure `Job` is available.
     // Wait, `ScanPlugin` job needs `version_id`. `components` table is basically `versions`.
@@ -294,7 +293,6 @@ fn parse_purl_meta(purl: &str) -> (String, String) {
     // pkg:ecosystem/name... or pkg:type/namespace/name
     if let Some(rest) = purl.strip_prefix("pkg:") {
         if let Some((eco, rest)) = rest.split_once('/') {
-            // Handle optional namespace? Not for simple logic yet
             let name_part = rest.split('@').next().unwrap_or(rest);
             return (eco.to_string(), name_part.to_string());
         }

@@ -40,8 +40,7 @@ wasmtime-wasi-http = "26.0"
 wit-bindgen = { version = "0.36.0", features = ["realloc"] }
 async-trait = "0.1"
 serde_json = { workspace = true }
-serde_yaml = "0.9.34"
-toml = "0.8"
+
 notify = "6.1"
 cliclack = "0.3.7"
 semver = "1.0"
