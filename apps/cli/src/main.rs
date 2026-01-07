@@ -7,7 +7,9 @@ use url::Url;
 // Use application crate directly
 use application::InstallService;
 
+mod adapters;
 mod commands;
+mod constants;
 mod core;
 mod host;
 mod keys;

@@ -492,7 +492,7 @@ impl BundleCommand {
 
     fn find_workspace_root_lock(&self, project_dir: &Path) -> Option<PathBuf> {
         let mut current = project_dir.parent();
-        for i in 0..5 {
+        for _i in 0..5 {
             if let Some(p) = current {
                 let l = p.join("Cargo.lock");
                 if l.exists() {

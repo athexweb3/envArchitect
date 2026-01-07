@@ -63,4 +63,5 @@ ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 rand = "0.8"
 base64 = "0.22"
 toml = { workspace = true }
+serde_yaml = "0.9"
 tracing = "0.1"

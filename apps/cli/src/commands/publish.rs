@@ -246,7 +246,7 @@ impl PublishCommand {
         bundle_dir: &Path,
         ghcr_token: Option<String>,
     ) -> Result<String> {
-        let (registry_url, target_url) = if let Some(t) = &self.target {
+        let (_registry_url, target_url) = if let Some(t) = &self.target {
             if t.contains('/') {
                 (t.clone(), format!("{}:{}", t, package_version))
             } else {
@@ -398,7 +398,7 @@ impl PublishCommand {
             .push(&reference, &layers_data, config, &auth, Some(manifest))
             .await
         {
-            Ok(res) => Ok(target_url),
+            Ok(_res) => Ok(target_url),
             Err(e) => {
                 cliclack::log::error(format!("Failed to push to registry: {}", e))?;
                 Err(e.into())
