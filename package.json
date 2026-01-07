@@ -7,13 +7,15 @@
 	"private": true,
 	"workspaces": [
 		"apps/*",
-		"packages/*"
+		"packages/*",
+		"packages/server/*"
 	],
 	"type": "module",
 	"scripts": {
 		"check": "biome check --write .",
 		"prepare": "husky",
 		"dev": "turbo dev",
+		"dev:all": "turbo dev",
 		"build": "turbo build",
 		"check-types": "turbo check-types",
 		"dev:native": "turbo -F native dev",
