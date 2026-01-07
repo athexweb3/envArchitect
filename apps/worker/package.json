@@ -1,0 +1,10 @@
+{
+    "name": "worker-service",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "cargo run --manifest-path ../../packages/server/worker/Cargo.toml",
+        "build": "cargo build --manifest-path ../../packages/server/worker/Cargo.toml",
+        "lint": "cargo clippy --manifest-path ../../packages/server/worker/Cargo.toml"
+    }
+}

@@ -8,7 +8,6 @@ pub fn find_and_load_manifest(start_dir: &Path) -> Result<(PathBuf, EnhancedMani
     // Discovery Order:
 
     use crate::constants::MANIFEST_JSON;
-    use crate::constants::MANIFEST_JSON;
     let candidates = vec![MANIFEST_JSON, "env.toml", "env.yaml"];
 
     for filename in candidates {
